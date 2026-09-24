@@ -1,0 +1,55 @@
+// 业务弹窗统一尺寸。组件页面只引用生成的 CSS 变量，不散落固定宽高。
+$qm-admin-dialog-min-height: min(560px, calc(100dvh - 80px));
+$qm-admin-dialog-min-width: min(640px, calc(100vw - 32px));
+$qm-admin-modal-min-height: min(560px, calc(100dvh - 80px));
+$qm-admin-modal-max-width: 960px;
+$qm-admin-modal-width: 80vw;
+$qm-admin-form-label-width: 120px;
+
+:root {
+  --qm-admin-dialog-min-height: #{$qm-admin-dialog-min-height};
+  --qm-admin-dialog-min-width: #{$qm-admin-dialog-min-width};
+  --qm-admin-form-label-width: #{$qm-admin-form-label-width};
+  --qm-admin-modal-max-width: #{$qm-admin-modal-max-width};
+  --qm-admin-modal-min-height: #{$qm-admin-modal-min-height};
+  --qm-admin-modal-width: #{$qm-admin-modal-width};
+}
+
+// Vben Modal 的内容节点通过 data-slot 标记，确保所有业务 Dialog/Modal 都有稳定的最小尺寸。
+[data-slot='dialog-content'] {
+  min-width: var(--qm-admin-dialog-min-width);
+  min-height: var(--qm-admin-dialog-min-height);
+}
+
+.qm-admin-menu-tree-title {
+  display: inline-flex;
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+}
+
+.qm-admin-menu-tree-title .ant-tag {
+  margin-inline: 0;
+}
+
+.qm-admin-form-view .ant-input-disabled,
+.qm-admin-form-view .ant-input[disabled] {
+  color: hsl(var(--foreground)) !important;
+  background-color: hsl(var(--muted) / 35%) !important;
+  border-color: hsl(var(--border)) !important;
+  opacity: 1;
+  -webkit-text-fill-color: hsl(var(--foreground));
+}
+
+.qm-admin-form-view .ant-radio-button-wrapper-disabled {
+  color: hsl(var(--muted-foreground)) !important;
+  background-color: hsl(var(--muted) / 35%) !important;
+  border-color: hsl(var(--border)) !important;
+}
+
+.qm-admin-form-view
+  .ant-radio-button-wrapper-disabled.ant-radio-button-wrapper-checked {
+  color: hsl(var(--primary)) !important;
+  background-color: hsl(var(--primary) / 12%) !important;
+  border-color: hsl(var(--primary) / 55%) !important;
+}

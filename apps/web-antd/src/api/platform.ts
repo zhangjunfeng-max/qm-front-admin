@@ -126,6 +126,28 @@ export namespace PlatformApi {
     page?: number;
     pageSize?: number;
   }
+  export interface PaymentException {
+    id: string;
+    eventKey: string;
+    tenantId: null | string;
+    tenantName: string;
+    orderId: null | string;
+    paymentAccountId: null | string;
+    provider: string;
+    exceptionType: string;
+    severity: 'critical' | 'info' | 'warning';
+    status: 'ignored' | 'open' | 'resolved';
+    orderNo: string;
+    outTradeNo: string;
+    externalTransactionId: string;
+    amountCent: number;
+    details: Record<string, unknown>;
+    resolutionNote: string;
+    resolvedBy: null | string;
+    resolvedAt: null | string;
+    createdAt: string;
+    updatedAt: string;
+  }
   export interface MiniappOption {
     id: string;
     name: string;
@@ -238,4 +260,23 @@ export function getPlatformPaymentMiniappsApi(tenantId: string) {
   return requestClient.get<{ items: PlatformApi.MiniappOption[] }>(
     `/platform/tenants/${tenantId}/payment-miniapps`,
   );
+}
+export function getPlatformPaymentExceptionsApi(params: {
+  page?: number;
+  pageSize?: number;
+  status?: 'ignored' | 'open' | 'resolved';
+  type?: string;
+}) {
+  return requestClient.get<{
+    items: PlatformApi.PaymentException[];
+    page: number;
+    pageSize: number;
+    total: number;
+  }>('/platform/payment-exceptions', { params });
+}
+export function resolvePlatformPaymentExceptionApi(
+  id: string,
+  data: { note: string; status: 'ignored' | 'resolved' },
+) {
+  return requestClient.post(`/platform/payment-exceptions/${id}/resolve`, data);
 }

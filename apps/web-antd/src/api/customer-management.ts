@@ -29,7 +29,12 @@ export interface ActivityOrder {
   customerName: string;
   customerPhone: string;
   participation: 'free' | 'group' | 'single';
-  status: 'confirmed' | 'pending_payment' | 'pending_registration';
+  status:
+    | 'confirmed'
+    | 'pending_payment'
+    | 'pending_registration'
+    | 'refunded'
+    | 'refunding';
   amountCent: number;
   createdAt: string;
   registeredAt: null | string;
@@ -68,7 +73,12 @@ export interface Registration {
   customerName: string;
   customerPhone: string;
   participation: 'free' | 'group' | 'single';
-  status: 'pending' | 'pending_payment' | 'registered';
+  status:
+    | 'pending'
+    | 'pending_payment'
+    | 'refunded'
+    | 'refunding'
+    | 'registered';
   amountCent: number;
   /** 填写姓名手机的时间 */
   createdAt: string;
@@ -104,6 +114,34 @@ export const getOrders = (params: OrderQuery, signal?: AbortSignal) =>
   });
 export const getOrder = (id: string, signal?: AbortSignal) =>
   requestClient.get<OrderDetail>(`/admin/orders/${id}`, { signal });
+
+export interface Refund {
+  id: string;
+  tenantId: string;
+  orderId: string;
+  outTradeNo: string;
+  outRefundNo: string;
+  externalRefundId: string;
+  amountCent: number;
+  reason: string;
+  status: 'abnormal' | 'closed' | 'failed' | 'processing' | 'success';
+  failureReason: string;
+  completedAt: null | string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const requestOrderRefund = (orderId: string, reason: string) =>
+  requestClient.post<Refund>(`/admin/orders/${orderId}/refund`, { reason });
+
+export const getOrderRefund = (orderId: string) =>
+  requestClient.get<Refund>(`/admin/orders/${orderId}/refund`);
+
+export const queryRefund = (refundId: string) =>
+  requestClient.post<Refund>(`/admin/refunds/${refundId}/query`);
+
+export const retryRefund = (refundId: string) =>
+  requestClient.post<Refund>(`/admin/refunds/${refundId}/retry`);
 
 export interface ExportQuery {
   /** 必填：不同活动的表单字段无法对齐成同一组列 */

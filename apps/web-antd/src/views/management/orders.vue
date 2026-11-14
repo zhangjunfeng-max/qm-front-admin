@@ -4,6 +4,8 @@ import type { ActivityOrder, OrderDetail } from '#/api/customer-management';
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
+import { useUserStore } from '@vben/stores';
+
 import {
   Alert,
   Button,
@@ -12,25 +14,40 @@ import {
   Divider,
   Drawer,
   Empty,
+  Input,
   InputSearch,
+  message,
+  Modal,
   Select,
   Spin,
   Table,
   Tag,
 } from 'ant-design-vue';
 
-import { getOrder, getOrders } from '#/api/customer-management';
+import {
+  getOrder,
+  getOrders,
+  queryRefund,
+  requestOrderRefund,
+  retryRefund,
+} from '#/api/customer-management';
 import ListShell from '#/components/management/list-shell.vue';
 
 import { useList } from './use-list';
 
 const route = useRoute();
 const router = useRouter();
+const user = useUserStore();
+const canRefund = computed(() =>
+  user.userInfo?.roles?.some((role) => role === 'admin'),
+);
 const participation = ref<string>();
 const routeStatus = computed(() =>
   route.query.status === 'pending_registration' ||
   route.query.status === 'pending_payment' ||
-  route.query.status === 'confirmed'
+  route.query.status === 'confirmed' ||
+  route.query.status === 'refunding' ||
+  route.query.status === 'refunded'
     ? route.query.status
     : undefined,
 );
@@ -119,6 +136,8 @@ const statusLabels = {
   confirmed: '已报名',
   pending_payment: '待支付',
   pending_registration: '待报名',
+  refunding: '退款中',
+  refunded: '已退款',
 };
 function paymentLabel(
   orderStatus: ActivityOrder['status'],
@@ -128,9 +147,75 @@ function paymentLabel(
     ? '待报名'
     : orderStatus === 'pending_payment'
       ? '待支付'
+      : orderStatus === 'refunding'
+        ? '退款中'
+        : orderStatus === 'refunded'
+          ? '已退款'
       : orderParticipation === 'free'
         ? '无需支付'
         : '已支付';
+}
+function paymentColor(
+  orderStatus: ActivityOrder['status'],
+  orderParticipation: ActivityOrder['participation'],
+) {
+  if (orderStatus === 'refunding') return 'processing';
+  if (orderStatus === 'refunded') return 'default';
+  return orderStatus === 'confirmed'
+    ? orderParticipation === 'free'
+      ? 'default'
+      : 'success'
+    : 'warning';
+}
+const refundOpen = ref(false);
+const refundReason = ref('');
+const refunding = ref(false);
+function refundAttemptId() {
+  const value = detail.value?.refundInfo?.refundAttemptId;
+  return typeof value === 'string' ? value : '';
+}
+function openRefund() {
+  refundReason.value = '';
+  refundOpen.value = true;
+}
+async function submitRefund() {
+  if (!detail.value || refunding.value) return;
+  if (!refundReason.value.trim()) {
+    message.error('请填写退款原因');
+    return;
+  }
+  refunding.value = true;
+  try {
+    const value = await requestOrderRefund(
+      detail.value.id,
+      refundReason.value.trim(),
+    );
+    message.success(
+      value.status === 'success' ? '退款成功' : '退款已提交，等待微信确认',
+    );
+    refundOpen.value = false;
+    await load();
+    await show(detail.value.id);
+  } catch (error) {
+    if (error instanceof Error) message.error(error.message);
+  } finally {
+    refunding.value = false;
+  }
+}
+async function refreshRefund(retry = false) {
+  const id = refundAttemptId();
+  if (!id || refunding.value) return;
+  refunding.value = true;
+  try {
+    const value = retry ? await retryRefund(id) : await queryRefund(id);
+    message.success(value.status === 'success' ? '退款成功' : '退款状态已刷新');
+    await load();
+    await show(detailId.value);
+  } catch (error) {
+    if (error instanceof Error) message.error(error.message);
+  } finally {
+    refunding.value = false;
+  }
 }
 function unpaid() {
   status.value =
@@ -193,6 +278,8 @@ const columns = [
           { label: '待报名', value: 'pending_registration' },
           { label: '已报名', value: 'confirmed' },
           { label: '待支付', value: 'pending_payment' },
+          { label: '退款中', value: 'refunding' },
+          { label: '已退款', value: 'refunded' },
         ]"
         @change="search"
       />
@@ -251,7 +338,7 @@ const columns = [
         </template>
         <Tag
           v-else-if="column.key === 'payment'"
-          :color="record.status === 'confirmed' ? 'success' : 'warning'"
+          :color="paymentColor(record.status, record.participation)"
         >
           {{ paymentLabel(record.status, record.participation) }}
         </Tag>
@@ -317,7 +404,7 @@ const columns = [
           <Descriptions title="订单信息" bordered :column="1" size="small">
             <DescriptionsItem label="支付状态">
               <Tag
-                :color="detail.status === 'confirmed' ? 'success' : 'warning'"
+                :color="paymentColor(detail.status, detail.participation)"
               >
                 {{ paymentLabel(detail.status, detail.participation) }}
               </Tag>
@@ -413,14 +500,90 @@ const columns = [
               }}
             </DescriptionsItem>
             <DescriptionsItem label="退款情况">
-              {{ detail.refundInfo ? '已记录退款信息' : '暂无退款记录' }}
+              <template v-if="detail.refundInfo">
+                <Tag
+                  :color="
+                    detail.refundInfo.status === 'success'
+                      ? 'default'
+                      : 'processing'
+                  "
+                >
+                  {{
+                    detail.refundInfo.status === 'success'
+                      ? '已退款'
+                      : '退款处理中'
+                  }}
+                </Tag>
+                <span v-if="detail.refundInfo.reason" class="ml-2">
+                  {{ detail.refundInfo.reason }}
+                </span>
+              </template>
+              <span v-else>暂无退款记录</span>
             </DescriptionsItem>
           </Descriptions>
         </template>
         <template #footer>
-          <Button class="float-right" @click="close">关闭</Button>
+          <div class="flex justify-between">
+            <div>
+              <Button
+                v-if="
+                  canRefund &&
+                  detail?.status === 'confirmed' &&
+                  detail.participation !== 'free'
+                "
+                danger
+                type="primary"
+                @click="openRefund"
+              >
+                全额退款
+              </Button>
+              <Button
+                v-else-if="
+                  canRefund &&
+                  ['refunding', 'refunded'].includes(detail?.status || '')
+                "
+                :loading="refunding"
+                @click="
+                  refreshRefund(
+                    detail?.refundInfo?.status === 'failed' ||
+                      detail?.refundInfo?.status === 'abnormal',
+                  )
+                "
+              >
+                刷新退款
+              </Button>
+            </div>
+            <Button @click="close">关闭</Button>
+          </div>
         </template>
       </Drawer>
+      <Modal
+        v-model:open="refundOpen"
+        title="确认全额退款"
+        :confirm-loading="refunding"
+        ok-text="确认退款"
+        cancel-text="取消"
+        @ok="submitRefund"
+      >
+        <Alert
+          type="warning"
+          show-icon
+          message="退款会原路退回客户原支付账户，退款成功后订单不再计入已报名和净收入。"
+          class="mb-4"
+        />
+        <div class="mb-2 text-sm">退款金额</div>
+        <div class="mb-4 text-xl font-semibold">
+          ¥{{ ((detail?.amountCent || 0) / 100).toFixed(2) }}
+        </div>
+        <div class="mb-2 text-sm">退款原因</div>
+        <Input.TextArea
+          v-model:value="refundReason"
+          :maxlength="200"
+          :rows="3"
+          show-count
+          placeholder="请填写退款原因"
+        />
+      </Modal>
     </template>
   </ListShell>
 </template>

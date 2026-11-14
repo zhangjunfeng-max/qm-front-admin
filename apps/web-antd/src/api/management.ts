@@ -167,8 +167,8 @@ export interface Activity extends ActivityInput {
  musicUrl: string;
  musicName: string;
  musicStatus: string;
- summary?: { scope: 'all' | 'group' | 'self'; registrations: number; collectedCent: number; pendingRegistration: number; pendingPayment: number };
- personal?: {collectedCent:number;registrations:number;paidOrders:number};
+ summary?: { scope: 'all' | 'group' | 'self'; registrations: number; collectedCent: number; refundedCent?: number; netRevenueCent?: number; pendingRegistration: number; pendingPayment: number };
+ personal?: {collectedCent:number;refundedCent?:number;netRevenueCent?:number;registrations:number;paidOrders:number};
   miniapp: MiniappOption | null;
   paymentAccount?: PaymentAccountOption | null;
   stores: StoreOption[];

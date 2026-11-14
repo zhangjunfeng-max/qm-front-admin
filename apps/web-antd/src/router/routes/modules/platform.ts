@@ -13,6 +13,17 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
+    name: 'PlatformPaymentExceptions',
+    path: '/platform/payment-exceptions',
+    component: () => import('#/views/platform/payment-exceptions.vue'),
+    meta: {
+      authority: ['platform_admin'],
+      icon: 'lucide:triangle-alert',
+      order: 9.5,
+      title: '支付异常',
+    },
+  },
+  {
     name: 'PlatformMusicManagement',
     path: '/platform/music',
     component: () => import('#/views/platform/music.vue'),

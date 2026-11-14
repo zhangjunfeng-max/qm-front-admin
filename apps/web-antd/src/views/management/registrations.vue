@@ -7,6 +7,8 @@ import type {
 import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
+import { useUserStore } from '@vben/stores';
+
 import {
   Alert,
   Button,
@@ -47,6 +49,8 @@ const registrationStatuses: Registration['status'][] = [
   'pending',
   'registered',
   'pending_payment',
+  'refunding',
+  'refunded',
 ];
 
 function asStatus(value: unknown): Registration['status'] | undefined {
@@ -58,6 +62,10 @@ function asStatus(value: unknown): Registration['status'] | undefined {
 
 const route = useRoute();
 const router = useRouter();
+const user = useUserStore();
+const canRefund = computed(() =>
+  user.userInfo?.roles?.some((role) => role === 'admin'),
+);
 const statusCounts = ref<Record<string, number>>();
 const hasPaymentRecords = ref(false);
 const participation = ref<string>();
@@ -222,11 +230,15 @@ const statusLabels: Record<Registration['status'], string> = {
   pending: '未提交',
   registered: '已报名',
   pending_payment: '待支付',
+  refunding: '退款中',
+  refunded: '已退款',
 };
 const statusColors: Record<Registration['status'], string> = {
   pending: 'default',
   registered: 'success',
   pending_payment: 'warning',
+  refunding: 'processing',
+  refunded: 'default',
 };
 async function copyPhone(phone: string) {
   try {
@@ -257,6 +269,16 @@ const statusTabs = computed(() => {
             key: 'pending_payment',
             label: statusLabels.pending_payment,
             count: counts?.pending_payment,
+          },
+          {
+            key: 'refunding',
+            label: statusLabels.refunding,
+            count: counts?.refunding,
+          },
+          {
+            key: 'refunded',
+            label: statusLabels.refunded,
+            count: counts?.refunded,
           },
         ]
       : []),
@@ -521,13 +543,48 @@ const columns = computed(() => [
                 }}
               </DescriptionsItem>
               <DescriptionsItem label="退款情况">
-                {{ detail.refundInfo ? '已记录退款信息' : '暂无退款记录' }}
+                <Tag
+                  v-if="detail.refundInfo"
+                  :color="
+                    detail.refundInfo.status === 'success'
+                      ? 'default'
+                      : 'processing'
+                  "
+                >
+                  {{
+                    detail.refundInfo.status === 'success'
+                      ? '已全额退款'
+                      : '退款处理中'
+                  }}
+                </Tag>
+                <span v-else>暂无退款记录</span>
               </DescriptionsItem>
             </Descriptions>
           </template>
         </template>
         <template #footer>
-          <Button class="float-right" @click="close">关闭</Button>
+          <div class="flex justify-between">
+            <Button
+              v-if="
+                canRefund &&
+                detail?.orderId &&
+                detail.status === 'registered' &&
+                detail.participation !== 'free'
+              "
+              danger
+              type="primary"
+              @click="
+                router.push({
+                  path: '/orders',
+                  query: { detailId: detail.orderId },
+                })
+              "
+            >
+              全额退款
+            </Button>
+            <span v-else />
+            <Button @click="close">关闭</Button>
+          </div>
         </template>
       </Drawer>
     </template>

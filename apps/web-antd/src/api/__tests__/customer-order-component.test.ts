@@ -2,6 +2,7 @@ import type { SetupContext } from 'vue';
 
 import { createApp, h } from 'vue';
 
+import { createPinia } from 'pinia';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
 import Customers from '../../views/management/customers.vue';
@@ -11,6 +12,9 @@ const api = vi.hoisted(() => ({
   customers: vi.fn(),
   orders: vi.fn(),
   order: vi.fn(),
+  queryRefund: vi.fn(),
+  requestRefund: vi.fn(),
+  retryRefund: vi.fn(),
   push: vi.fn(),
   query: {} as Record<string, string>,
   params: {} as Record<string, string>,
@@ -19,6 +23,9 @@ vi.mock('#/api/customer-management', () => ({
   getCustomers: api.customers,
   getOrders: api.orders,
   getOrder: api.order,
+  queryRefund: api.queryRefund,
+  requestOrderRefund: api.requestRefund,
+  retryRefund: api.retryRefund,
 }));
 vi.mock('vue-router', () => ({
   useRouter: () => ({ push: api.push, replace: vi.fn() }),
@@ -54,6 +61,7 @@ function mount(component: typeof Customers | typeof Orders) {
   const root = document.createElement('div');
   document.body.append(root);
   const app = createApp({ render: () => h(component) });
+  app.use(createPinia());
   app.mount(root);
   cleanup = () => app.unmount();
 }

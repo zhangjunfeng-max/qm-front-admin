@@ -297,7 +297,12 @@ const columns = [
             {{ record.summary.registrations }} 人报名<span
               v-if="record.groupEnabled"
             >
-              · ¥{{ (record.summary.collectedCent / 100).toFixed(2) }}</span>
+              · 净收 ¥{{
+                (
+                  (record.summary.netRevenueCent ??
+                    record.summary.collectedCent) / 100
+                ).toFixed(2)
+              }}</span>
           </Button>
           <span v-else>—</span>
           <div

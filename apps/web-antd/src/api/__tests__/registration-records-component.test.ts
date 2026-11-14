@@ -2,6 +2,7 @@ import type { SetupContext } from 'vue';
 
 import { createApp, h } from 'vue';
 
+import { createPinia } from 'pinia';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 
 import Registrations from '../../views/management/registrations.vue';
@@ -57,6 +58,7 @@ function mount(component: typeof Registrations) {
   const root = document.createElement('div');
   document.body.append(root);
   const app = createApp({ render: () => h(component) });
+  app.use(createPinia());
   app.mount(root);
   cleanup = () => app.unmount();
 }

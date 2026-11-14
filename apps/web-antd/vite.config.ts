@@ -1,9 +1,12 @@
 import { defineConfig } from '@vben/vite-config';
 
+import { licenseNoticesPlugin } from '../../scripts/license-notices.mjs';
+
 export default defineConfig(async () => {
   return {
     application: {},
     vite: {
+      plugins: [licenseNoticesPlugin()],
       resolve: {
         // Workspace packages can resolve separate peer instances. Router
         // injection keys must come from the same instance in production too.

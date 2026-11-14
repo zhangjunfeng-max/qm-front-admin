@@ -32,7 +32,7 @@ describe('activity employee registration', () => {
       phone: ' 13800138000 ',
       displayName: '员工甲',
       password: 'Password123!',
-      role: 'admin',
+      role: 'member',
       groupId: null,
     });
     const [url, payload] = post.mock.calls[0]!;
@@ -41,7 +41,7 @@ describe('activity employee registration', () => {
       token: 'invite-token',
       phone: '13800138000',
       displayName: '员工甲',
-      role: 'admin',
+      role: 'member',
       groupId: null,
       keyId: key.keyId,
       challenge: key.challenge,

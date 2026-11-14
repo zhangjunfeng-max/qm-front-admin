@@ -49,8 +49,7 @@
     "@vben-core/typings": "workspace:*",
     "@vueuse/core": "catalog:",
     "vue": "catalog:",
-    "zod": "catalog:",
-    "zod-defaults": "catalog:"
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@vue/test-utils": "catalog:",

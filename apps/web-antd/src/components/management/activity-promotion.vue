@@ -18,16 +18,25 @@ import QRCode from 'qrcode';
 
 import {
   buildActivityH5Url,
+  generateActivityEntry,
   generateActivityMiniappCode,
   promotionImageExtension,
 } from '#/api/activity-promotion';
 import { captureContext } from '#/api/context-lifecycle';
 
-const props = defineProps<{ activity: Activity; open: boolean }>();
+import ActivitySharePoster from './activity-share-poster.vue';
+
+const props = defineProps<{
+  activity: Activity;
+  open: boolean;
+  salesId?: string;
+}>();
 const emit = defineEmits<{ close: [] }>();
 const tab = ref('h5');
 const h5Url = ref('');
 const h5Qr = ref('');
+const h5Poster = ref('');
+const miniappPoster = ref('');
 const h5Error = ref('');
 const h5Loading = ref(false);
 const miniappCode = ref('');
@@ -61,6 +70,8 @@ function clear() {
   ready.value = false;
   h5Url.value = '';
   h5Qr.value = '';
+  h5Poster.value = '';
+  miniappPoster.value = '';
   h5Error.value = '';
   h5Loading.value = false;
   miniappCode.value = '';
@@ -87,13 +98,20 @@ async function prepareH5(version: number) {
   if (!promotable.value) return;
   h5Loading.value = true;
   try {
+    const entry = await generateActivityEntry(
+      props.activity.id,
+      controller!.signal,
+      props.salesId,
+    );
+    if (!current(version)) return;
     h5Url.value = buildActivityH5Url(
       import.meta.env.VITE_ACTIVITY_H5_URL ?? '',
-      props.activity.id,
+      entry.code,
     );
     const dataUrl = await QRCode.toDataURL(h5Url.value, {
-      width: 280,
-      margin: 2,
+      width: 392,
+      margin: 4,
+      errorCorrectionLevel: 'M',
     });
     if (current(version)) h5Qr.value = dataUrl;
   } catch {
@@ -142,6 +160,7 @@ async function generate() {
     const result = await generateActivityMiniappCode(
       props.activity.id,
       controller.signal,
+      props.salesId,
     );
     if (!current(version)) return;
     if (
@@ -202,37 +221,38 @@ function close() {
     />
     <Tabs v-model:active-key="tab">
       <TabPane key="h5" tab="H5">
-        <p class="mb-3 text-muted-foreground">
-          分享活动链接或二维码，邀请客户参与。
-        </p>
         <Alert v-if="h5Error" class="mb-4" type="warning" :message="h5Error" />
         <Spin :spinning="h5Loading">
-          <img
+          <ActivitySharePoster
             v-if="h5Qr"
-            :src="h5Qr"
-            alt="活动二维码"
-            class="mx-auto mb-4 h-60 w-60"
+            :activity="activity"
+            :code-url="h5Qr"
+            @ready="h5Poster = $event"
           />
         </Spin>
         <Input.TextArea
           :value="h5Url"
           readonly
-          :rows="3"
+          :rows="1"
           aria-label="活动链接"
         />
         <Space class="mt-4" wrap>
           <Button :disabled="!promotable || !h5Url" @click="openActivity">
-打开活动
-</Button>
-          <Button type="primary" :disabled="!promotable || !h5Url" @click="copy">
-复制链接
-</Button>
+            打开活动
+          </Button>
           <Button
-            :disabled="!promotable || !h5Qr"
-            @click="download(h5Qr, '活动二维码')"
-            >
-下载二维码
-</Button>
+            type="primary"
+            :disabled="!promotable || !h5Url"
+            @click="copy"
+          >
+            复制链接
+          </Button>
+          <Button
+            :disabled="!promotable || !h5Poster"
+            @click="download(h5Poster, `${activity.name }-分享海报`)"
+          >
+            下载分享海报
+          </Button>
         </Space>
       </TabPane>
       <TabPane
@@ -254,11 +274,12 @@ function close() {
           message="小程序码生成失败，请稍后重试"
         />
         <Spin :spinning="generating">
-          <img
+          <ActivitySharePoster
             v-if="miniappCode"
-            :src="miniappCode"
-            alt="小程序码"
-            class="mx-auto mb-4 h-60 w-60"
+            :activity="activity"
+            :code-url="miniappCode"
+            channel="miniapp"
+            @ready="miniappPoster = $event"
           />
         </Spin>
         <Space class="mt-4" wrap>
@@ -267,14 +288,20 @@ function close() {
             :disabled="!promotable || !miniappAvailable"
             :loading="generating"
             @click="generate"
-            >
-{{ miniappError ? '重试' : '生成小程序码' }}
-</Button>
+          >
+            {{ miniappError ? '重试' : '生成小程序码' }}
+          </Button>
           <Button
             :disabled="!promotable || !miniappCode"
             @click="download(miniappCode, '小程序码')"
+          >
+            下载小程序码
+          </Button>
+          <Button
+            :disabled="!promotable || !miniappPoster"
+            @click="download(miniappPoster, `${activity.name }-小程序海报`)"
             >
-下载小程序码
+下载分享海报
 </Button>
         </Space>
       </TabPane>

@@ -18,7 +18,8 @@ describe('activity editing payload', () => {
     const value = Object.assign(defaultActivity(), {
       id: 'ignored',
       status: 'archived',
-      canEdit: true,
+      canJoin: false,
+    canEdit: true,
       virtualRegistrationCount: 123,
     });
     const input = createActivityInput(reactive(value));

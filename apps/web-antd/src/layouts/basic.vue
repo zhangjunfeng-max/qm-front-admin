@@ -17,7 +17,10 @@ import { useAccessStore, useUserStore } from '@vben/stores';
 
 import { Alert, Button, message, Modal } from 'ant-design-vue';
 
+import IcpFooter from '#/components/icp-footer.vue';
+import NotificationChanges from '#/components/management/notification-changes.vue';
 import TenantSwitcher from '#/components/tenant/tenant-switcher.vue';
+import { desktopPreferenceKey } from '#/router/mobile-navigation';
 import { useAuthStore } from '#/store';
 import { useNotificationStore } from '#/store/notifications';
 import LoginForm from '#/views/_core/authentication/login.vue';
@@ -42,6 +45,18 @@ const { isDark } = usePreferences();
 const showDot = computed(() => notices.unreadCount > 0);
 
 const menus = computed(() => [
+  ...(!authStore.profile?.isPlatformAdmin && authStore.currentTenant
+    ? [
+        {
+          handler: () => {
+            localStorage.removeItem(desktopPreferenceKey);
+            void router.push('/m/workbench');
+          },
+          icon: 'lucide:smartphone',
+          text: '手机工作台',
+        },
+      ]
+    : []),
   {
     handler: () => router.push('/account'),
     icon: 'lucide:user',
@@ -118,6 +133,7 @@ watch(
     @clear-preferences-and-logout="handleLogout"
     @logout="handleLogout"
   >
+    <template #footer><IcpFooter /></template>
     <template #header-left-10><TenantSwitcher /></template>
     <template #user-dropdown>
       <UserDropdown
@@ -128,11 +144,9 @@ watch(
         :tag-text="
           authStore.profile?.isPlatformAdmin
             ? '平台管理员'
-            : userStore.userInfo?.roles?.includes('owner')
-              ? '所有者'
-              : userStore.userInfo?.roles?.includes('admin')
-                ? '管理员'
-                : '成员'
+            : userStore.userInfo?.roles?.includes('admin')
+              ? '管理员'
+              : '员工'
         "
         @clear-preferences-and-logout="handleLogout"
         @logout="handleLogout"
@@ -189,18 +203,41 @@ watch(
       <Modal
         :open="!!notices.selected"
         :title="notices.selected?.title"
+        :width="
+          notices.selected?.changes?.length
+            ? 'min(860px, calc(100vw - 32px))'
+            : 520
+        "
         :footer="null"
         @cancel="notices.selected = undefined"
       >
         <p class="mb-4 text-xs text-muted-foreground">
           {{
             notices.selected &&
-              new Date(notices.selected.createdAt).toLocaleString('zh-CN')
+            new Date(notices.selected.createdAt).toLocaleString('zh-CN')
           }}
         </p>
         <p class="whitespace-pre-wrap break-words">
           {{ notices.selected?.message }}
         </p>
+        <NotificationChanges
+          v-if="notices.selected?.changes?.length"
+          :changes="notices.selected.changes"
+        />
+        <Button
+          v-if="
+            notices.selected?.kind === 'activity_changed' &&
+            notices.selected.link
+          "
+          type="link"
+          class="mt-3"
+          @click="
+            router.push(notices.selected.link);
+            notices.selected = undefined;
+          "
+        >
+          查看活动
+        </Button>
       </Modal>
       <Alert
         v-if="notices.failed"

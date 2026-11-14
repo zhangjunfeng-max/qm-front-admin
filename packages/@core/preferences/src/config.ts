@@ -1,5 +1,7 @@
 import type { Preferences } from './types';
 
+import { DEFAULT_AVATAR_URL, DEFAULT_LOGO_URL } from '@vben-core/shared/constants';
+
 const defaultPreferences: Preferences = {
   app: {
     accessMode: 'frontend',
@@ -15,8 +17,7 @@ const defaultPreferences: Preferences = {
     contentPaddingLeft: 0,
     contentPaddingRight: 0,
     contentPaddingTop: 0,
-    defaultAvatar:
-      'https://unpkg.com/@vbenjs/static-source@0.1.7/source/avatar-v1.webp',
+    defaultAvatar: DEFAULT_AVATAR_URL,
     defaultHomePath: '/dashboard',
     dynamicTitle: true,
     enableCheckUpdates: true,
@@ -47,7 +48,7 @@ const defaultPreferences: Preferences = {
     companySiteLink: 'https://www.vben.pro',
     date: '2024',
     enable: true,
-    icp: '闽ICP备19024351号',
+    icp: '',
     icpLink: 'https://beian.miit.gov.cn/',
     settingShow: true,
   },
@@ -67,7 +68,7 @@ const defaultPreferences: Preferences = {
   logo: {
     enable: true,
     fit: 'contain',
-    source: 'https://unpkg.com/@vbenjs/static-source@0.1.7/source/logo-v1.webp',
+    source: DEFAULT_LOGO_URL,
     showText: true,
     logoMode: 'icon',
   },

@@ -15,7 +15,7 @@ import { formatFileSize } from './activity-media';
 const props = withDefaults(
   defineProps<{
     assets: ReturnType<typeof useActivityMedia>;
-    kind?: 'audio' | 'detail' | 'image';
+    kind?: 'detail' | 'image';
     label: string;
     multiple?: boolean;
     disabled?: boolean;
@@ -143,7 +143,6 @@ const renderItem: UploadProps['itemRender'] = ({ originNode, file }) => {
       : null,
   ]);
 };
-const audioUrl = computed(() => props.assets.previews[urls.value[0] || '']);
 </script>
 
 <template>
@@ -151,7 +150,6 @@ const audioUrl = computed(() => props.assets.previews[urls.value[0] || '']);
     class="activity-asset-upload"
     :class="{
       'activity-asset-upload--sizes': showFileSize,
-      'activity-asset-upload--audio': kind === 'audio',
     }"
   >
     <PreviewUpload
@@ -161,11 +159,9 @@ const audioUrl = computed(() => props.assets.previews[urls.value[0] || '']);
       :accept="
         kind === 'detail'
           ? '.jpg,.jpeg,.png,.webp,.mp4,.webm'
-          : kind === 'image'
-            ? '.jpg,.jpeg,.png,.webp'
-            : '.mp3,.m4a,.wav,.ogg'
+          : '.jpg,.jpeg,.png,.webp'
       "
-      :list-type="kind === 'audio' ? 'text' : 'picture-card'"
+      list-type="picture-card"
       :multiple="multiple"
       :draggable="multiple"
       :disabled="disabled || assets.preparing.value > 0"
@@ -173,10 +169,7 @@ const audioUrl = computed(() => props.assets.previews[urls.value[0] || '']);
       @update:model-value="update"
     >
       <template #default>
-        <span v-if="kind !== 'audio'">{{ urls.length && !multiple ? '更换' : '选择' }}{{ label }}</span>
-        <Button v-else :disabled="disabled">
-          {{ urls.length ? '更换' : '选择' }}{{ label }}
-        </Button>
+        <span>{{ urls.length && !multiple ? '更换' : '选择' }}{{ label }}</span>
       </template>
     </PreviewUpload>
     <Modal
@@ -195,12 +188,6 @@ const audioUrl = computed(() => props.assets.previews[urls.value[0] || '']);
         class="w-full"
       ></video>
     </Modal>
-    <audio
-      v-if="kind === 'audio' && audioUrl"
-      :src="audioUrl"
-      controls
-      class="mt-2 max-w-full"
-    ></audio>
   </div>
 </template>
 
@@ -219,11 +206,6 @@ const audioUrl = computed(() => props.assets.previews[urls.value[0] || '']);
   border: 1px solid white;
   border-radius: 50%;
   box-shadow: 0 0 0 1px rgb(0 0 0 / 10%);
-}
-
-.activity-asset-upload--audio :deep(.activity-asset-status) {
-  top: 9px;
-  right: 28px;
 }
 
 .activity-asset-upload :deep(.activity-video-card) {

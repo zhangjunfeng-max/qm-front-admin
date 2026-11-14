@@ -5,7 +5,7 @@ import { VCropper } from '@vben/common-ui';
 
 const cropperRef = ref<InstanceType<typeof VCropper>>();
 const aspectRatio = ref('1:1');
-const imageUrl = ref('https://picsum.photos/seed/cropper-ratio/800/600');
+const imageUrl = ref('data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22800%22%20height%3D%22600%22%20viewBox%3D%220%200%20800%20600%22%3E%3Crect%20width%3D%22800%22%20height%3D%22600%22%20fill%3D%22%23dbeafe%22%2F%3E%3Ccircle%20cx%3D%22580%22%20cy%3D%22170%22%20r%3D%2290%22%20fill%3D%22%23fbbf24%22%2F%3E%3Cpath%20d%3D%22M0%20600V460L220%20260l220%20220%20160-140%20200%20190v70%22%20fill%3D%22%2393c5fd%22%2F%3E%3C%2Fsvg%3E');
 const croppedImage = ref('');
 
 const aspectOptions = [
@@ -36,7 +36,7 @@ const handleReset = () => {
   // 释放 URL
   revokeCroppedImage();
   croppedImage.value = '';
-  imageUrl.value = `https://picsum.photos/seed/cropper-${Date.now()}/800/600`;
+  imageUrl.value = `data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22800%22%20height%3D%22600%22%20viewBox%3D%220%200%20800%20600%22%3E%3Crect%20width%3D%22800%22%20height%3D%22600%22%20fill%3D%22%23dbeafe%22%2F%3E%3Ccircle%20cx%3D%22580%22%20cy%3D%22170%22%20r%3D%2290%22%20fill%3D%22%23fbbf24%22%2F%3E%3Cpath%20d%3D%22M0%20600V460L220%20260l220%20220%20160-140%20200%20190v70%22%20fill%3D%22%2393c5fd%22%2F%3E%3C%2Fsvg%3E`;
 };
 
 // 组件卸载时清理

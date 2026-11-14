@@ -2,6 +2,28 @@ import type { RouteRecordRaw } from 'vue-router';
 
 const routes: RouteRecordRaw[] = [
   {
+    name: 'PlatformPaymentConfiguration',
+    path: '/platform/payments',
+    component: () => import('#/views/platform/payments.vue'),
+    meta: {
+      authority: ['platform_admin'],
+      icon: 'lucide:wallet-cards',
+      order: 9,
+      title: '支付配置',
+    },
+  },
+  {
+    name: 'PlatformMusicManagement',
+    path: '/platform/music',
+    component: () => import('#/views/platform/music.vue'),
+    meta: {
+      authority: ['platform_admin'],
+      icon: 'lucide:music',
+      order: 12,
+      title: '音乐管理',
+    },
+  },
+  {
     name: 'PlatformActivityReview',
     path: '/platform/activities',
     component: () => import('#/views/platform/activities.vue'),

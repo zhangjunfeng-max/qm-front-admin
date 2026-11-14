@@ -11,8 +11,8 @@ import { captureContext } from '#/api/context-lifecycle';
 import { changeActivityState } from '#/api/management';
 
 const props = withDefaults(
-  defineProps<{ activity: Activity; small?: boolean }>(),
-  { small: false },
+  defineProps<{ activity: Activity; small?: boolean; actions?: string[] }>(),
+  { small: false, actions: undefined },
 );
 const emit = defineEmits<{ changed: [] }>();
 const busy = ref(false);
@@ -21,7 +21,7 @@ onBeforeUnmount(() => dialog?.destroy());
 const labels = {
   'submit-review': {
     title: '提交平台审核？',
-    content: '提交后活动内容锁定，审核通过后可自行发布。',
+    content: '提交后核心配置锁定，展示资料仍可修改。审核通过后可自行发布。',
   },
   'withdraw-review': {
     title: '撤回为草稿？',
@@ -29,7 +29,7 @@ const labels = {
   },
   publish: {
     title: '发布活动？',
-    content: '发布后活动内容锁定，按开始、结束时间进入进行中和已结束状态。',
+    content: '发布后按开始、结束时间对外展示，展示资料仍可修改。',
   },
   archive: {
     title: '归档活动？',
@@ -66,7 +66,10 @@ function act(action: 'archive' | 'restore' | ActivityTransition) {
 <template>
   <Space :size="small ? 0 : 8" :wrap="!small">
     <Button
-      v-if="activity.canSubmitReview"
+      v-if="
+        activity.canSubmitReview &&
+        (!actions || actions.includes('submit-review'))
+      "
       :type="small ? 'link' : 'primary'"
       :size="small ? 'small' : 'middle'"
       :loading="busy"
@@ -75,7 +78,10 @@ function act(action: 'archive' | 'restore' | ActivityTransition) {
       提交审核
     </Button>
     <Button
-      v-if="activity.canWithdrawReview"
+      v-if="
+        activity.canWithdrawReview &&
+        (!actions || actions.includes('withdraw-review'))
+      "
       :type="small ? 'link' : 'default'"
       :size="small ? 'small' : 'middle'"
       :loading="busy"
@@ -84,7 +90,7 @@ function act(action: 'archive' | 'restore' | ActivityTransition) {
       撤回草稿
     </Button>
     <Button
-      v-if="activity.canPublish"
+      v-if="activity.canPublish && (!actions || actions.includes('publish'))"
       :type="small ? 'link' : 'primary'"
       :size="small ? 'small' : 'middle'"
       :loading="busy"
@@ -93,7 +99,7 @@ function act(action: 'archive' | 'restore' | ActivityTransition) {
       发布
     </Button>
     <Button
-      v-if="activity.canArchive"
+      v-if="activity.canArchive && (!actions || actions.includes('archive'))"
       type="link"
       :size="small ? 'small' : 'middle'"
       :disabled="busy"
@@ -103,7 +109,7 @@ function act(action: 'archive' | 'restore' | ActivityTransition) {
       归档
     </Button>
     <Button
-      v-if="activity.canRestore"
+      v-if="activity.canRestore && (!actions || actions.includes('restore'))"
       type="link"
       :size="small ? 'small' : 'middle'"
       :disabled="busy"

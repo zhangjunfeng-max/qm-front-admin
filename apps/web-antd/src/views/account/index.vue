@@ -28,7 +28,7 @@ const userStore = useUserStore();
         class="mt-4"
         type="info"
         show-icon
-        message="当前为普通成员账号，公司信息与成员列表需由公司所有者或管理员查看。"
+        message="当前为员工账号，公司信息与成员列表需由公司管理员查看。"
       />
     </Card>
   </Page>

@@ -29,11 +29,11 @@ const columns = [
   { title: '报名人电话', key: 'phone', width: 150 },
   { title: '最近活动销售', key: 'sales', width: 130, ellipsis: true },
   { title: '最近留资时间', key: 'lastContactAt', width: 180 },
-  { title: '最近订单时间', key: 'lastOrderAt', width: 180 },
+  { title: '最近提交时间', key: 'lastOrderAt', width: 180 },
   { title: '最近参与活动', key: 'activity', width: 160, ellipsis: true },
   { title: '最近报名成功', key: 'lastRegistrationAt', width: 180 },
   { title: '客户身份', key: 'kind', width: 120 },
-  { title: '订单数', dataIndex: 'orderCount', width: 90 },
+  { title: '参与次数', dataIndex: 'orderCount', width: 90 },
   { title: '建档时间', key: 'createdAt', width: 180 },
   { title: '操作', key: 'actions', width: 100, fixed: 'right' as const },
 ];
@@ -80,22 +80,22 @@ const columns = [
             class="!text-orange-500"
             @click="
               router.push({
-                path: '/orders',
+                path: '/registrations',
                 query: { customerId: record.id, status: 'pending_payment' },
               })
             "
           >
-            {{ record.pendingOrderCount }}笔待支付
+            {{ record.pendingOrderCount }}人待支付
           </Button>
           <Button
             v-if="record.pendingRegistrationCount"
             type="link"
             @click="
               router.push({
-                path: '/orders',
+                path: '/registrations',
                 query: {
                   customerId: record.id,
-                  status: 'pending_registration',
+                  status: 'pending',
                 },
               })
             "
@@ -152,7 +152,10 @@ const columns = [
           v-else-if="column.key === 'actions'"
           type="link"
           @click="
-            router.push({ path: '/orders', query: { customerId: record.id } })
+            router.push({
+              path: '/registrations',
+              query: { customerId: record.id },
+            })
           "
         >
           查看记录

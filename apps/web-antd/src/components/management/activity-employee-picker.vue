@@ -18,6 +18,7 @@ const props = defineProps<{
   activityId: string;
   open: boolean;
   disabled?: boolean;
+  max?: number;
 }>();
 const selected = defineModel<string[]>({ required: true });
 const busy = defineModel<boolean>('busy', { default: false });
@@ -42,8 +43,8 @@ const selection = computed(() => ({
   selectedRowKeys: selected.value,
   preserveSelectedRowKeys: true,
   onChange: (keys: (number | string)[]) => {
-    if (keys.length > 1000) {
-      message.warning('每次最多选择 1000 人');
+    if (keys.length > (props.max ?? 1000)) {
+      message.warning(`每次最多选择 ${props.max ?? 1000} 人`);
       return;
     }
     selected.value = keys.map(String);

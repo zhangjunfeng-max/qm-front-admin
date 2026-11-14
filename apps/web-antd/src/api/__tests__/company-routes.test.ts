@@ -10,29 +10,31 @@ import { describe, expect, it } from 'vitest';
 import managementRoutes from '../../router/routes/modules/management';
 
 describe('company permission switching', () => {
-  it('keeps global customer and order menus for company managers and activity leaders or admins', async () => {
+  it('keeps the customer menu visible and installs the hidden registration list', async () => {
     const router = createRouter({ history: createMemoryHistory(), routes: [] });
+    const routes = managementRoutes.filter((route) =>
+      ['Registrations', 'CustomerManagement', 'ActivityOrders'].includes(
+        String(route.name),
+      ),
+    );
     const result = await generateAccessible('frontend', {
       router,
-      routes: managementRoutes.filter((route) =>
-        ['ActivityOrders', 'CustomerManagement'].includes(String(route.name)),
-      ),
-      roles: ['member', 'activity_manager'],
+      routes,
+      roles: ['member'],
     });
+    // 订单线与报名记录都不进菜单，但路由必须装好：订单功能保留，本期只隐藏入口。
     expect(result.accessibleMenus.map((menu) => menu.name)).toEqual([
       '客户管理',
-      '活动订单',
     ]);
     expect(router.hasRoute('CustomerManagement')).toBe(true);
+    expect(router.hasRoute('Registrations')).toBe(true);
     expect(router.hasRoute('ActivityOrders')).toBe(true);
     const ordinary = await generateAccessible('frontend', {
       router: createRouter({ history: createMemoryHistory(), routes: [] }),
-      routes: managementRoutes.filter((route) =>
-        ['ActivityOrders', 'CustomerManagement'].includes(String(route.name)),
-      ),
+      routes,
       roles: ['member'],
     });
-    expect(ordinary.accessibleMenus).toEqual([]);
+    expect(ordinary.accessibleMenus.map((m) => m.name)).toEqual(['客户管理']);
   });
   it('removes old company routes after resetting and generating a lower role', async () => {
     const staticRoutes: RouteRecordRaw[] = [

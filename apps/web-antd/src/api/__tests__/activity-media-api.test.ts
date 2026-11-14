@@ -10,27 +10,27 @@ afterEach(() => {
 });
 describe('activity storage upload', () => {
   it('requests a tenant ticket and uploads the actual bytes without business credentials', async () => {
-    const file = new File(['music'], 'music.mp3', { type: 'audio/mpeg' });
+    const file = new File(['image'], 'poster.jpg', { type: 'image/jpeg' });
     post.mockResolvedValue({
-      fileUrl: 'https://cos.example.com/music.mp3',
-      uploadUrl: 'https://cos.example.com/music.mp3?signature=short',
+      fileUrl: 'https://cos.example.com/poster.jpg',
+      uploadUrl: 'https://cos.example.com/poster.jpg?signature=short',
       method: 'PUT',
-      headers: { 'Content-Type': 'audio/mpeg' },
+      headers: { 'Content-Type': 'image/jpeg' },
     });
     const put = vi.fn().mockResolvedValue({ ok: true });
     vi.stubGlobal('fetch', put);
     expect(await uploadActivityMedia(file, 'activity-1')).toBe(
-      'https://cos.example.com/music.mp3',
+      'https://cos.example.com/poster.jpg',
     );
     expect(post).toHaveBeenCalledWith(
       '/admin/activities/activity-1/files/presign-upload',
-      { filename: 'music.mp3', contentType: 'audio/mpeg', size: file.size },
+      { filename: 'poster.jpg', contentType: 'image/jpeg', size: file.size },
     );
     expect(put).toHaveBeenCalledWith(
-      'https://cos.example.com/music.mp3?signature=short',
+      'https://cos.example.com/poster.jpg?signature=short',
       {
         method: 'PUT',
-        headers: { 'Content-Type': 'audio/mpeg' },
+        headers: { 'Content-Type': 'image/jpeg' },
         body: file,
         credentials: 'omit',
         signal: expect.any(AbortSignal),

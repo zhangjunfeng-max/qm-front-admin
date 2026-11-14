@@ -5,7 +5,7 @@ import { authRequestClient, requestClient } from '#/api/request';
 import { responseStatus } from '#/api/session';
 
 export namespace AuthApi {
-  export type Role = 'admin' | 'member' | 'owner' | 'platform_admin';
+  export type Role = 'admin' | 'member' | 'platform_admin';
 
   export interface LoginParams {
     phone: string;

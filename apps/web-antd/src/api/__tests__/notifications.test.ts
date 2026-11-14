@@ -45,6 +45,17 @@ function setup() {
   return { api, center };
 }
 afterEach(() => vi.useRealTimers());
+it('opens full activity change details before navigating and clears them on company switch', async () => {
+  const { api, center } = setup();
+  center.bind('platform', 'platform-user');
+  api.detail.mockResolvedValue({ ...notice, kind: 'activity_changed', link: '/platform/activities?activityId=activity-a', changes: [{ field: 'musicUrl', label: '背景音乐', before: 'old.mp3', after: 'new.mp3' }] });
+  const navigate = vi.fn();
+  await center.activate('delivery-a', navigate);
+  expect(navigate).not.toHaveBeenCalled();
+  expect(center.selected.value?.changes?.[0]?.after).toBe('new.mp3');
+  center.bind('admin', 'company-b');
+  expect(center.selected.value).toBeUndefined();
+});
 it('aborts and clears A -> B -> A, rejects late results and clears on user change/logout', async () => {
   const { api, center } = setup();
   const old = deferred<ReturnType<typeof result>>();

@@ -27,18 +27,16 @@ beforeEach(() => {
   setActivePinia(createPinia());
   mocks.controller = new AbortController();
   mocks.users = reactive({
-    userInfo: { userId: 'user-a', tenantId: 'company-a', roles: ['owner'] },
+    userInfo: { userId: 'user-a', tenantId: 'company-a', roles: ['admin'] },
   });
   mocks.access = reactive({ accessToken: 'token' });
   mocks.auth = reactive({ switchingTenant: false, reloadingContext: false });
-  mocks.list
-    .mockReset()
-    .mockResolvedValue({
-      items: [],
-      total: 0,
-      unreadCount: 0,
-      canPublish: true,
-    });
+  mocks.list.mockReset().mockResolvedValue({
+    items: [],
+    total: 0,
+    unreadCount: 0,
+    canPublish: true,
+  });
 });
 it('binds company APIs for platform users entering a company, platform APIs only in platform context', () => {
   const store = useNotificationStore();

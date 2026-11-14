@@ -55,7 +55,6 @@ const recipientOptions = ref<{ label: string; value: string }[]>([]);
 const selectedLabels = new Map<string, string>();
 const platform = computed(() => center.scope === 'platform');
 const roleOptions = [
-  { label: '所有者', value: 'owner' },
   { label: '管理员', value: 'admin' },
   { label: '成员', value: 'member' },
 ];
@@ -329,15 +328,11 @@ void load();
       <template #bodyCell="{ column, record }">
         <template v-if="column.key === 'status'">
           <Tag :color="record.isRead ? undefined : 'blue'">
-            {{
-              record.isRead ? '已读' : '未读'
-            }}
+            {{ record.isRead ? '已读' : '未读' }}
           </Tag>
         </template>
         <template v-else-if="column.key === 'createdAt'">
-          {{
-            new Date(record.createdAt).toLocaleString('zh-CN')
-          }}
+          {{ new Date(record.createdAt).toLocaleString('zh-CN') }}
         </template>
         <template v-else-if="column.key === 'actions'">
           <Space>

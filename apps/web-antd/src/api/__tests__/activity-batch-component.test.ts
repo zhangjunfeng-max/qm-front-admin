@@ -9,7 +9,9 @@ const { getOptions, batch } = vi.hoisted(() => ({
   batch: vi.fn(),
 }));
 vi.mock('@vben/stores', () => ({
-  useUserStore: () => ({ userInfo: { userId: 'owner', roles: ['owner'] } }),
+  useUserStore: () => ({
+    userInfo: { userId: 'company-admin', roles: ['admin'] },
+  }),
 }));
 vi.mock('#/api/management', () => ({
   getEmployeeOptions: getOptions,
@@ -71,6 +73,8 @@ describe('activity bulk employee assignment', () => {
     app.mount(root);
     unmount = () => app.unmount();
     await vi.waitFor(() => expect(button('批量添加员工')).toBeDefined());
+    expect(document.body.textContent).not.toContain('已选 0 人');
+    expect(button('批量调整')).toBeUndefined();
     button('批量添加员工').click();
     await vi.waitFor(() =>
       expect(

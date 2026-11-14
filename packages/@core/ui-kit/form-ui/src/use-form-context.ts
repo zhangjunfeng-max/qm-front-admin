@@ -18,10 +18,10 @@ import {
   string as zodString,
   ZodStringFormat,
 } from 'zod';
-import { getDefaultsForSchema } from 'zod-defaults';
 
 import { getFormFieldSchemas } from './form-render/schema';
 import { useFormRuntime } from './form-runtime';
+import { getSchemaDefaults } from './schema-defaults';
 
 type ExtendFormProps = VbenFormProps & {
   formApi?: ExtendedFormApi<any, any, any>;
@@ -36,8 +36,8 @@ export const [injectComponentRefMap, provideComponentRefMap] =
   createContext<Map<string, unknown>>('ComponentRefMap');
 
 /**
- * Rebuild the schema used by zod-defaults, replacing native format nodes that
- * zod-defaults does not recognise while retaining supported wrappers.
+ * Rebuild the schema used to initialise form placeholders while retaining
+ * supported wrappers and explicit defaults.
  */
 function normalizeSchemaForDefaults(rule: ZodType): ZodType {
   const rawRule = toRaw(rule) as any;
@@ -112,7 +112,7 @@ export function useFormInitial(
       }
     });
 
-    const schemaInitialValues = getDefaultsForSchema(object(zodObject));
+    const schemaInitialValues = getSchemaDefaults(object(zodObject));
 
     const zodDefaults: Record<string, any> = {};
     for (const key in schemaInitialValues) {
@@ -135,7 +135,7 @@ export function useFormInitial(
       }
       return defaultValues;
     } else if (rule instanceof ZodIntersection) {
-      return getDefaultsForSchema(normalizeSchemaForDefaults(rule) as any);
+      return getSchemaDefaults(normalizeSchemaForDefaults(rule));
     } else {
       return undefined; // 其他类型不提供默认值
     }

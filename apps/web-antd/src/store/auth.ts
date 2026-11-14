@@ -28,6 +28,8 @@ import {
 import { sessionContext } from '#/api/company-context';
 import { captureContext, invalidateContext } from '#/api/context-lifecycle';
 import { resetRoutes } from '#/router';
+import { reloadDocument } from '#/router/document-navigation';
+import { loginDestination } from '#/router/mobile-navigation';
 
 export const useAuthStore = defineStore(
   'auth',
@@ -90,7 +92,7 @@ export const useAuthStore = defineStore(
       applySession(result);
       useAuthStore().$persist();
       broadcastContextChange();
-      window.location.replace(
+      reloadDocument(
         router.resolve(sessionContext(result.user, result.tenant).homePath)
           .href,
       );
@@ -111,7 +113,7 @@ export const useAuthStore = defineStore(
       currentTenant.value = null;
       availableTenants.value = [];
       useAuthStore().$persist();
-      window.location.replace(router.resolve('/home').href);
+      reloadDocument(router.resolve('/home').href);
     }
     function notifyError(title: string, error: unknown) {
       notification.error({
@@ -126,7 +128,7 @@ export const useAuthStore = defineStore(
       applySession(result);
       useAuthStore().$persist();
       broadcastContextChange();
-      await router.replace(sessionContext(result.user, result.tenant).homePath);
+      await router.replace(loginDestination(router.currentRoute.value.query.redirect,sessionContext(result.user, result.tenant).homePath));
       notification.success({
         message: '登录成功',
         description: `欢迎回来，${result.user.displayName || result.user.phone}`,
@@ -213,7 +215,7 @@ export const useAuthStore = defineStore(
           // Persist before navigation so a reload cannot revive the previous tenant.
           useAuthStore().$persist();
           broadcastContextChange();
-          window.location.replace(
+          reloadDocument(
             router.resolve(sessionContext(result.user, result.tenant).homePath)
               .href,
           );

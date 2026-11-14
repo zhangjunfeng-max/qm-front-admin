@@ -391,10 +391,7 @@ onUnmounted(() => {
             共 {{ count(summary?.totalActivities) }} 场
           </span>
         </template>
-        <div
-          v-if="overview"
-          class="flex min-h-[240px] flex-col gap-2"
-        >
+        <div v-if="overview" class="flex min-h-[240px] flex-col gap-2">
           <div v-for="item in distribution" :key="item.name" class="shrink-0">
             <div class="mb-1 flex justify-between text-xs">
               <span>{{ item.name }}</span>
@@ -503,6 +500,7 @@ onUnmounted(() => {
           :total="total"
           :page-size-options="['10', '20', '50']"
           show-size-changer
+          responsive
           :show-total="(value: number) => `共 ${value} 家公司`"
           @change="changePage"
         />

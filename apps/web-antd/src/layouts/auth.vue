@@ -4,6 +4,8 @@ import { computed } from 'vue';
 import { AuthPageLayout } from '@vben/layouts';
 import { preferences } from '@vben/preferences';
 
+import IcpFooter from '#/components/icp-footer.vue';
+
 const appName = computed(() => preferences.app.name);
 const logo = computed(() => preferences.logo.source);
 const logoDark = computed(() => preferences.logo.sourceDark);
@@ -17,7 +19,6 @@ const logoDark = computed(() => preferences.logo.sourceDark);
     page-description="活动报名、员工推广与经营数据管理"
     page-title="团购营销管理后台"
   >
-    <!-- 自定义工具栏 -->
-    <!-- <template #toolbar></template> -->
+    <template #copyright><IcpFooter /></template>
   </AuthPageLayout>
 </template>

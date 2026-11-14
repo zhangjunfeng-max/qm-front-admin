@@ -99,7 +99,7 @@ afterEach(() => {
   document.body.innerHTML = '';
   vi.restoreAllMocks();
 });
-it('shows login-only customers and navigates to their order filter', async () => {
+it('shows login-only customers and navigates to their registration records', async () => {
   mount(Customers);
   await vi.waitFor(() =>
     expect(document.body.textContent).toContain('13900139000'),
@@ -108,7 +108,7 @@ it('shows login-only customers and navigates to their order filter', async () =>
   expect(document.body.textContent).toContain('微信');
   button('查看记录').click();
   expect(api.push).toHaveBeenCalledWith({
-    path: '/orders',
+    path: '/registrations',
     query: { customerId: 'customer-a' },
   });
 });
@@ -227,9 +227,9 @@ it('shows customer contact and unpaid orders for immediate follow-up', async () 
     expect(document.body.textContent).toContain('销售小王'),
   );
   expect(document.body.textContent).toContain('13900139000');
-  button('1笔待支付').click();
+  button('1人待支付').click();
   expect(api.push).toHaveBeenCalledWith({
-    path: '/orders',
+    path: '/registrations',
     query: { customerId: 'customer-a', status: 'pending_payment' },
   });
 });
@@ -305,8 +305,8 @@ it('retains anonymous customer profiles and links directly to pending registrati
   expect(document.body.textContent).not.toContain('首次登录');
   button('1人次待报名').click();
   expect(api.push).toHaveBeenCalledWith({
-    path: '/orders',
-    query: { customerId: 'profile-a', status: 'pending_registration' },
+    path: '/registrations',
+    query: { customerId: 'profile-a', status: 'pending' },
   });
 });
 

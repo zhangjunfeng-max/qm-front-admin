@@ -19,10 +19,6 @@ const types: Record<string, string> = {
   webp: 'image/webp',
   mp4: 'video/mp4',
   webm: 'video/webm',
-  mp3: 'audio/mpeg',
-  m4a: 'audio/mp4',
-  wav: 'audio/wav',
-  ogg: 'audio/ogg',
 };
 export function formatFileSize(size: number) {
   return size < 1024 * 1024
@@ -91,7 +87,6 @@ export function useActivityMedia(
       ...form.detailMedia.map((media) => media.url),
       form.shareImageUrl,
       form.forwardImageUrl,
-      form.musicUrl,
     ].filter(Boolean);
   }
   function clear() {
@@ -102,16 +97,14 @@ export function useActivityMedia(
     progress.value = '';
   }
   onBeforeUnmount(clear);
-  async function prepare(file: File, kind: 'audio' | 'image' | 'video') {
+  async function prepare(file: File, kind: 'image' | 'video') {
     const serial = generation;
     const type = types[file.name.split('.').pop()?.toLowerCase() || ''];
     if (!type?.startsWith(`${kind}/`))
       throw new Error(
         kind === 'image'
           ? '请选择 JPG、PNG 或 WebP 图片'
-          : kind === 'video'
-            ? '请选择 MP4 或 WebM 视频'
-            : '请选择 MP3、M4A、WAV 或 OGG 音乐',
+          : '请选择 MP4 或 WebM 视频',
       );
     if (file.size === 0) throw new Error('文件为空，请重新选择');
     if (file.size > 50 * 1024 * 1024)
@@ -126,7 +119,17 @@ export function useActivityMedia(
       if (
         prepared.size > (kind === 'video' ? 50 * 1024 * 1024 : MAX_UPLOAD_BYTES)
       )
-        throw new Error('音乐过大，请选择不超过10MB的文件');
+        throw new Error('文件过大，请重新选择');
+      let dimensions: undefined | { width: number; height: number };
+      if (kind === 'image') {
+        const image = await imageCompression.loadImage(
+          await imageCompression.getDataUrlFromFile(prepared),
+        );
+        dimensions = {
+          width: image.naturalWidth || image.width,
+          height: image.naturalHeight || image.height,
+        };
+      }
       if (serial !== generation) return;
       const url = URL.createObjectURL(prepared);
       local.set(url, prepared);
@@ -135,6 +138,7 @@ export function useActivityMedia(
         size: prepared.size,
         originalSize: file.size,
         contentType: prepared.type,
+        ...dimensions,
       };
       previews[url] = url;
       return url;
@@ -156,7 +160,6 @@ export function useActivityMedia(
       'posterUrl',
       'shareImageUrl',
       'forwardImageUrl',
-      'musicUrl',
     ] as const) {
       if (form[key] === before) form[key] = after;
     }

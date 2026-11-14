@@ -7,6 +7,7 @@ import { coreRoutes, fallbackNotFoundRoute } from './core';
 const dynamicRouteFiles = import.meta.glob(
   [
     './modules/home.ts',
+    './modules/mobile.ts',
     './modules/platform.ts',
     './modules/management.ts',
     './modules/notifications.ts',

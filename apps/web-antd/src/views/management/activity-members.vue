@@ -7,7 +7,14 @@ import type {
   EmployeeBatchInput,
 } from '#/api/management';
 
-import { computed, onMounted, reactive, ref, watch } from 'vue';
+import {
+  computed,
+  onBeforeUnmount,
+  onMounted,
+  reactive,
+  ref,
+  watch,
+} from 'vue';
 
 import { useUserStore } from '@vben/stores';
 
@@ -33,14 +40,21 @@ import {
   getActivityEmployees,
   getActivityGroups,
   reviewApplication,
+  saveActivityGroup,
 } from '#/api/management';
+import { captureContext } from '#/api/context-lifecycle';
 import ActivityEmployeePicker from '#/components/management/activity-employee-picker.vue';
+import ActivityGroups from './activity-groups.vue';
 
-const props = defineProps<{ activity: Activity; myGroupId?: null | string }>();
+const props = defineProps<{
+  activity: Activity;
+  myGroupId?: null | string;
+  initialStatus?: string;
+}>();
 const emit = defineEmits<{ changed: [] }>();
 const user = useUserStore();
 const tenantAdmin = computed(() =>
-  user.userInfo?.roles?.some((r) => ['admin', 'owner'].includes(r)),
+  user.userInfo?.roles?.some((r) => ['admin'].includes(r)),
 );
 const groups = ref<ActivityGroup[]>([]);
 const items = ref<ActivityEmployee[]>([]);
@@ -54,8 +68,49 @@ const keyword = ref('');
 const page = ref(1);
 const pageSize = ref(20);
 const role = ref<string>();
-const status = ref<string>();
+const status = ref<string | undefined>(props.initialStatus);
+const groupSettings = ref(false);
+const newGroupName = ref('');
+const creatingGroup = ref(false);
+let batchGeneration = 0;
+async function createGroup() {
+  if (
+    !batchOpen.value ||
+    batchSaving.value ||
+    !newGroupName.value.trim() ||
+    creatingGroup.value
+  )
+    return;
+  const generation = batchGeneration;
+  const activityId = props.activity.id;
+  creatingGroup.value = true;
+  const context = captureContext();
+  try {
+    const group = await saveActivityGroup(activityId, '', {
+      name: newGroupName.value.trim(),
+      sortOrder: groups.value.length,
+    });
+    context.assertCurrent();
+    if (
+      generation !== batchGeneration ||
+      !batchOpen.value ||
+      props.activity.id !== activityId
+    )
+      return;
+    groups.value = [...groups.value, group];
+    batchForm.groupId = group.id;
+    newGroupName.value = '';
+    message.success('小组已创建并选中');
+  } finally {
+    if (generation === batchGeneration) creatingGroup.value = false;
+  }
+}
+function pendingOnly() {
+  status.value = status.value === 'pending' ? undefined : 'pending';
+  search();
+}
 const total = ref(0);
+const pendingTotal = ref<number>();
 const mode = ref<'assign' | 'review'>('assign');
 const target = ref<ActivityEmployee>();
 const form = reactive({
@@ -71,13 +126,13 @@ let serial = 0;
 const roleOptions = computed(() => [
   { label: '组员', value: 'member' },
   { label: '组长', value: 'leader' },
-  ...(tenantAdmin.value ? [{ label: '活动管理员', value: 'admin' }] : []),
 ]);
 const groupOptions = computed(() =>
   groups.value.map((g) => ({ label: g.name, value: g.id })),
 );
 async function load() {
   const n = ++serial;
+  const context = captureContext();
   loading.value = true;
   failed.value = false;
   try {
@@ -89,14 +144,28 @@ async function load() {
       role: role.value,
       groupId: groupId.value,
     });
+    const pending =
+      status.value === 'pending'
+        ? r.total
+        : props.activity.canReviewApplications && tenantAdmin.value
+          ? (
+              await getActivityEmployees(props.activity.id, {
+                page: 1,
+                pageSize: 1,
+                status: 'pending',
+              })
+            ).total
+          : undefined;
+    context.assertCurrent();
     if (n === serial) {
+      pendingTotal.value = pending;
       items.value = r.items;
       total.value = r.total;
       for (const row of r.items)
         if (selected.value.has(row.userId)) selected.value.set(row.userId, row);
     }
   } catch {
-    if (n === serial) {
+    if (n === serial && !context.signal.aborted) {
       failed.value = true;
       items.value = [];
     }
@@ -127,12 +196,6 @@ function edit(row: ActivityEmployee, review = false) {
   });
   open.value = true;
 }
-watch(
-  () => form.role,
-  (value) => {
-    if (value === 'admin') form.groupId = null;
-  },
-);
 async function save() {
   if (saving.value) return;
   if (!form.userId) {
@@ -143,6 +206,8 @@ async function save() {
     message.warning('请为组长选择小组');
     return;
   }
+  const context = captureContext();
+  context.assertCurrent();
   saving.value = true;
   try {
     if (mode.value === 'review')
@@ -158,6 +223,7 @@ async function save() {
         groupId: form.groupId,
         status: form.status,
       });
+    context.assertCurrent();
     message.success(mode.value === 'review' ? '申请已处理' : '活动员工已保存');
     open.value = false;
     await load();
@@ -176,19 +242,13 @@ const statusText: Record<string, string> = {
 const roleText: Record<string, string> = {
   member: '组员',
   leader: '组长',
-  admin: '活动管理员',
 };
 function canReview(row: ActivityEmployee) {
   return (
     props.activity.canReviewApplications &&
+    tenantAdmin.value &&
     row.status === 'pending' &&
-    row.userId !== user.userInfo?.userId &&
-    (tenantAdmin.value ||
-      (props.activity.currentRole === 'admin' && row.role !== 'admin') ||
-      (props.activity.currentRole === 'leader' &&
-        row.role === 'member' &&
-        !!props.myGroupId &&
-        row.groupId === props.myGroupId))
+    row.userId !== user.userInfo?.userId
   );
 }
 const selected = ref(new Map<string, ActivityEmployee>());
@@ -217,7 +277,6 @@ const batchTitle = computed(
 );
 const canAdjust = (row: ActivityEmployee) =>
   props.activity.canManageMembers &&
-  (tenantAdmin.value || row.role !== 'admin') &&
   ['approved', 'disabled'].includes(row.status);
 const canBatchAdjust = computed(
   () => selectedRows.value.length > 0 && selectedRows.value.every(canAdjust),
@@ -251,10 +310,23 @@ const rowSelection = computed(() => ({
 function clearSelection() {
   selected.value = new Map();
 }
+function invalidateBatch() {
+  batchGeneration++;
+  batchOpen.value = false;
+  creatingGroup.value = false;
+  newGroupName.value = '';
+}
+function closeBatch() {
+  if (batchSaving.value || creatingGroup.value) return;
+  invalidateBatch();
+}
 function openBatch(
   action: typeof batchAction.value,
   value?: 'approved' | 'disabled' | 'rejected',
 ) {
+  if (batchSaving.value || creatingGroup.value) return;
+  batchGeneration++;
+  newGroupName.value = '';
   batchAction.value = action;
   addIds.value = [];
   pickerBusy.value = false;
@@ -267,14 +339,13 @@ function openBatch(
   });
   batchOpen.value = true;
 }
-watch(
-  () => batchForm.role,
-  (value) => {
-    if (value === 'admin') batchForm.groupId = null;
-  },
-);
 async function saveBatch() {
-  if (batchSaving.value || (batchAction.value === 'add' && pickerBusy.value))
+  if (
+    !batchOpen.value ||
+    batchSaving.value ||
+    creatingGroup.value ||
+    (batchAction.value === 'add' && pickerBusy.value)
+  )
     return;
   const ids =
     batchAction.value === 'add' ? addIds.value : [...selected.value.keys()];
@@ -309,13 +380,16 @@ async function saveBatch() {
       remark: batchForm.remark,
     };
   }
+  const context = captureContext();
+  context.assertCurrent();
   batchSaving.value = true;
   try {
     const result = await batchActivityEmployees(props.activity.id, data);
+    context.assertCurrent();
     message.success(
       `已处理 ${result.changed} 人${result.skipped ? `，跳过已加入的 ${result.skipped} 人` : ''}`,
     );
-    batchOpen.value = false;
+    invalidateBatch();
     clearSelection();
     await load();
     emit('changed');
@@ -342,11 +416,29 @@ watch(
   () => props.activity,
   () => {
     clearSelection();
-    batchOpen.value = false;
+    invalidateBatch();
     open.value = false;
     void refresh();
   },
 );
+const lifetime = captureContext();
+function clearContext() {
+  serial++;
+  groupSerial++;
+  open.value = false;
+  invalidateBatch();
+  groupSettings.value = false;
+  items.value = [];
+  groups.value = [];
+  clearSelection();
+}
+lifetime.signal.addEventListener('abort', clearContext, { once: true });
+onBeforeUnmount(() => {
+  invalidateBatch();
+  serial++;
+  groupSerial++;
+  lifetime.signal.removeEventListener('abort', clearContext);
+});
 onMounted(refresh);
 </script>
 <template>
@@ -394,13 +486,32 @@ onMounted(refresh);
       >
         批量添加员工
       </Button>
+      <Button
+        v-if="activity.canReviewApplications"
+        :type="status === 'pending' ? 'primary' : 'default'"
+        @click="pendingOnly"
+        >待审核申请{{
+          pendingTotal == null ? '' : `（${pendingTotal}）`
+        }}</Button
+      >
+      <Button
+        v-if="activity.canManageGroups"
+        :type="groupSettings ? 'primary' : 'default'"
+        @click="groupSettings = !groupSettings"
+        >分组设置（{{ groups.length }}）</Button
+      >
       <Button @click="refresh">刷新</Button>
     </div>
     <div
-      v-if="activity.canManageMembers || activity.canReviewApplications"
+      v-if="
+        selected.size > 0 &&
+        (activity.canManageMembers || activity.canReviewApplications)
+      "
       class="mb-3 flex flex-wrap items-center gap-2"
     >
-      <span class="text-sm text-muted-foreground">已选 {{ selected.size }} 人</span>
+      <span class="text-sm text-muted-foreground"
+        >已选 {{ selected.size }} 人</span
+      >
       <Button size="small" :disabled="!selected.size" @click="clearSelection">
         清空选择
       </Button>
@@ -446,6 +557,9 @@ onMounted(refresh);
         </Button>
       </template>
     </div>
+    <section v-if="groupSettings" class="mb-4 rounded border border-border p-4">
+      <ActivityGroups :activity="activity" @changed="refresh" />
+    </section>
     <Alert v-if="failed" type="error" message="活动员工加载失败" class="mb-3">
       <template #action><Button @click="refresh">重试</Button></template>
     </Alert>
@@ -489,11 +603,7 @@ onMounted(refresh);
           </Tag>
           <Space v-else-if="column.key === 'actions'" :size="0">
             <Button
-              v-if="
-                activity.canManageMembers &&
-                (tenantAdmin || record.role !== 'admin') &&
-                record.status !== 'pending'
-              "
+              v-if="activity.canManageMembers && record.status !== 'pending'"
               type="link"
               @click="edit(record as ActivityEmployee)"
             >
@@ -557,11 +667,7 @@ onMounted(refresh);
             :disabled="activity.currentRole === 'leader' && !tenantAdmin"
           />
         </FormItem>
-        <FormItem
-          v-if="form.role !== 'admin'"
-          label="所属小组"
-          :required="form.role === 'leader'"
-        >
+        <FormItem label="所属小组" :required="form.role === 'leader'">
           <Select
             :value="form.groupId || undefined"
             @update:value="
@@ -596,36 +702,39 @@ onMounted(refresh);
       :title="batchTitle"
       :width="batchAction === 'add' ? 820 : 520"
       :confirm-loading="batchSaving"
-      :ok-button-props="{ disabled: batchAction === 'add' && pickerBusy }"
-      :cancel-button-props="{ disabled: batchSaving }"
-      :closable="!batchSaving"
+      :ok-button-props="{
+        disabled: creatingGroup || (batchAction === 'add' && pickerBusy),
+      }"
+      :cancel-button-props="{ disabled: batchSaving || creatingGroup }"
+      :closable="!batchSaving && !creatingGroup"
       :mask-closable="false"
       ok-text="确认提交"
+      cancel-text="取消"
       @ok="saveBatch"
-      @cancel="batchOpen = false"
+      @cancel="closeBatch"
     >
       <ActivityEmployeePicker
         v-if="batchAction === 'add'"
         v-model="addIds"
         v-model:busy="pickerBusy"
-        :disabled="batchSaving"
+        :disabled="batchSaving || creatingGroup"
         :activity-id="activity.id"
         :open="batchOpen"
       />
       <p v-else class="text-sm text-muted-foreground">
         已选 {{ selected.size }} 人
       </p>
-      <Form layout="vertical" class="mt-4" :disabled="batchSaving">
+      <Form
+        layout="vertical"
+        class="mt-4"
+        :disabled="batchSaving || creatingGroup"
+      >
         <template v-if="batchAction === 'add' || batchAction === 'adjust'">
           <div class="grid grid-cols-1 gap-x-4 sm:grid-cols-2">
             <FormItem label="活动角色" required>
               <Select v-model:value="batchForm.role" :options="roleOptions" />
             </FormItem>
-            <FormItem
-              v-if="batchForm.role !== 'admin'"
-              label="所属小组"
-              :required="batchForm.role === 'leader'"
-            >
+            <FormItem label="所属小组" :required="batchForm.role === 'leader'">
               <Select
                 :value="batchForm.groupId || undefined"
                 :options="groupOptions"
@@ -634,7 +743,32 @@ onMounted(refresh);
                 @update:value="
                   batchForm.groupId = typeof $event === 'string' ? $event : null
                 "
-              />
+              >
+                <template
+                  v-if="activity.canManageGroups"
+                  #dropdownRender="{ menuNode }"
+                >
+                  <component :is="menuNode" />
+                  <div
+                    class="flex gap-2 border-t border-border p-2"
+                    @mousedown.prevent
+                  >
+                    <Input
+                      v-model:value="newGroupName"
+                      placeholder="新小组名称"
+                      :maxlength="80"
+                      @keydown.stop
+                      @mousedown.stop
+                    />
+                    <Button
+                      :loading="creatingGroup"
+                      :disabled="!newGroupName.trim()"
+                      @click="createGroup"
+                      >创建并选中</Button
+                    >
+                  </div>
+                </template>
+              </Select>
             </FormItem>
           </div>
         </template>

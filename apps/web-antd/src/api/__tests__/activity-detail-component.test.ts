@@ -11,12 +11,22 @@ import { defaultActivity } from '../activity-form';
 const mock = vi.hoisted(() => ({
   route: { params: { id: 'a' } },
   get: vi.fn(),
+  assign: vi.fn(),
   push: vi.fn(),
+  resolve: vi.fn(),
+  invitation: vi.fn(),
+}));
+vi.mock('#/store', () => ({ useAuthStore: () => ({ profile: { isPlatformAdmin: false } }) }));
+vi.mock('@vben/stores', () => ({
+  useUserStore: () => ({ userInfo: { userId: 'company-admin' } }),
+}));
+vi.mock('#/components/performance/performance-panel.vue', () => ({
+  default: { render: () => null },
 }));
 vi.mock('#/api/request', () => ({ requestClient: {} }));
 vi.mock('vue-router', () => ({
   useRoute: () => mock.route,
-  useRouter: () => ({ push: mock.push }),
+  useRouter: () => ({ push: mock.push, resolve: mock.resolve }),
 }));
 vi.mock('@vben/common-ui', async () => {
   const { h, defineComponent } = await import('vue');
@@ -46,8 +56,9 @@ vi.mock('#/api/management', () => ({
   getActivity: mock.get,
   getMyMembership: async () => null,
   getActivityGroups: vi.fn(),
-  getActivityInvitation: vi.fn(),
+  getActivityInvitation: mock.invitation,
   applyActivity: vi.fn(),
+  assignActivityEmployee: mock.assign,
   changeActivityState: vi.fn(),
 }));
 let unmount: (() => void) | undefined;
@@ -55,10 +66,12 @@ afterEach(() => {
   unmount?.();
   document.body.innerHTML = '';
   mock.get.mockReset();
+  mock.assign.mockReset();
 });
 function record(id: string): Activity {
   return {
     ...defaultActivity(),
+ musicUrl: '', musicName: '', musicStatus: '',
     id,
     name: `活动${id}`,
     tenantId: 'company',
@@ -86,7 +99,10 @@ function record(id: string): Activity {
     memberCount: 0,
     groupCount: 0,
     currentRole: 'admin',
+    canJoin: false,
     canEdit: true,
+    canEditCore: true,
+    canEditSchedule: true,
     canManageMembers: false,
     canManageGroups: false,
     canReviewApplications: false,
@@ -122,20 +138,103 @@ it('keeps the latest activity and its mini program when an older detail response
   expect(root.textContent).toContain('小程序b');
   expect(root.textContent).not.toContain('小程序a');
   const orders = [...root.querySelectorAll('button')].find(
-    (button) => button.textContent?.trim() === '订单管理',
+    (button) => button.textContent?.trim() === '报名记录',
   );
   expect(orders).toBeTruthy();
   orders?.click();
-  expect(mock.push).toHaveBeenCalledWith('/activities/b/orders');
+  expect(mock.push).toHaveBeenCalledWith('/activities/b/registrations');
 });
 it('does not offer customer promotion for a restricted activity detail', async () => {
   mock.route = reactive({ params: { id: 'restricted' } });
-  mock.get.mockResolvedValue({ ...record('restricted'), performanceScope: 'none', canEdit: false, currentRole: '' });
+  mock.get.mockResolvedValue({
+    ...record('restricted'),
+    performanceScope: 'none',
+    canEdit: false,
+    currentRole: '',
+  });
   const root = document.createElement('div');
   document.body.append(root);
   const app = createApp({ render: () => h(ActivityDetail) });
   app.mount(root);
   unmount = () => app.unmount();
-  await vi.waitFor(() => expect(root.querySelector('h1')?.textContent).toBe('活动restricted'));
-  expect([...root.querySelectorAll('button')].some((button) => button.textContent?.replaceAll(/\s/g, '') === '活动推广')).toBe(false);
+  await vi.waitFor(() =>
+    expect(root.querySelector('h1')?.textContent).toBe('活动restricted'),
+  );
+  expect(
+    [...root.querySelectorAll('button')].some(
+      (button) => button.textContent?.replaceAll(/\s/g, '') === '活动推广',
+    ),
+  ).toBe(false);
+});
+
+it('allows company administrators to explicitly join their own company activity', async () => {
+  mock.route = reactive({ params: { id: 'mine' } });
+  mock.get.mockResolvedValue({ ...record('mine'), canJoin: true });
+  mock.assign.mockResolvedValue({ role: 'member', status: 'approved' });
+  const root = document.createElement('div');
+  document.body.append(root);
+  const app = createApp({ render: () => h(ActivityDetail) });
+  app.mount(root);
+  unmount = () => app.unmount();
+  await vi.waitFor(() => expect(root.textContent).toContain('活动mine'));
+  const join = [...root.querySelectorAll('button')].find(
+    (b) => b.textContent?.replaceAll(/\s/g, '') === '加入活动',
+  );
+  expect(join).toBeTruthy();
+  join!.click();
+  await vi.waitFor(() =>
+    expect(mock.assign).toHaveBeenCalledWith('mine', 'company-admin', {
+      role: 'member',
+      groupId: null,
+      status: 'approved',
+    }),
+  );
+});
+it('does not expose a participation entry when the server forbids platform participation', async () => {
+  mock.route = reactive({ params: { id: 'platform' } });
+  mock.get.mockResolvedValue({ ...record('platform'), canJoin: false });
+  const root = document.createElement('div');
+  document.body.append(root);
+  const app = createApp({ render: () => h(ActivityDetail) });
+  app.mount(root);
+  unmount = () => app.unmount();
+  await vi.waitFor(() => expect(root.textContent).toContain('活动platform'));
+  expect(
+    [...root.querySelectorAll('button')].some((b) =>
+      ['加入活动', '申请加入'].includes(
+        b.textContent?.replaceAll(/\s/g, '') ?? '',
+      ),
+    ),
+  ).toBe(false);
+  expect(mock.assign).not.toHaveBeenCalled();
+});
+
+it('generates employee invitations using the configured router history', async () => {
+  mock.route = reactive({ params: { id: 'invite' } });
+  mock.get.mockResolvedValue({ ...record('invite'), canManageMembers: true });
+  mock.invitation.mockResolvedValue({
+    registrationPath: '/auth/activity-register?token=example',
+  });
+  mock.resolve.mockReturnValue({
+    href: '/#/auth/activity-register?token=example',
+  });
+  const root = document.createElement('div');
+  document.body.append(root);
+  const app = createApp({ render: () => h(ActivityDetail) });
+  app.mount(root);
+  unmount = () => app.unmount();
+  await vi.waitFor(() => expect(root.textContent).toContain('活动invite'));
+  const invite = [...root.querySelectorAll('button')].find(
+    (b) => b.textContent?.replaceAll(/\s/g, '') === '员工邀请',
+  );
+  expect(invite).toBeTruthy();
+  invite!.click();
+  await vi.waitFor(() =>
+    expect(document.querySelector('textarea')?.value).toContain(
+      '/#/auth/activity-register?token=example',
+    ),
+  );
+  expect(mock.resolve).toHaveBeenCalledWith(
+    '/auth/activity-register?token=example',
+  );
 });

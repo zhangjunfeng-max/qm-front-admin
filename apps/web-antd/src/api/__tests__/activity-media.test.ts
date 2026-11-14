@@ -64,6 +64,8 @@ describe('activity local media staging', () => {
     expect(assets.info(local!)).toMatchObject({
       size: file.size,
       originalSize: file.size,
+      width: 2400,
+      height: 3600,
     });
     uploadActivityMedia.mockResolvedValue('https://cos.example.com/photo.jpg');
     await assets.uploadPending();
@@ -71,6 +73,10 @@ describe('activity local media staging', () => {
     expect(uploadActivityMedia).toHaveBeenCalledTimes(1);
     expect(form.posterUrl).toBe('https://cos.example.com/photo.jpg');
     expect(form.mediaFiles[form.posterUrl]?.size).toBe(file.size);
+    expect(form.mediaFiles[form.posterUrl]).toMatchObject({
+      width: 2400,
+      height: 3600,
+    });
     expect(await uploadActivityMedia.mock.calls[0]![0].text()).toBe(
       'original-jpeg',
     );

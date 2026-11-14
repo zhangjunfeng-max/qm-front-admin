@@ -213,9 +213,6 @@ catalogs:
     class-variance-authority:
       specifier: ^0.7.1
       version: 0.7.1
-    commitlint-plugin-function-rules:
-      specifier: ^5.0.1
-      version: 5.0.1
     consola:
       specifier: ^3.4.2
       version: 3.4.2
@@ -510,9 +507,6 @@ catalogs:
     zod:
       specifier: ^4.4.3
       version: 4.4.3
-    zod-defaults:
-      specifier: ^0.2.3
-      version: 0.2.3
 
 overrides:
   '@ast-grep/napi': ^0.51.0
@@ -1056,9 +1050,6 @@ importers:
       '@vben/node-utils':
         specifier: workspace:*
         version: link:../../node-utils
-      commitlint-plugin-function-rules:
-        specifier: 'catalog:'
-        version: 5.0.1(@commitlint/lint@21.2.4)
       cz-git:
         specifier: 'catalog:'
         version: 1.14.0
@@ -1453,9 +1444,6 @@ importers:
       zod:
         specifier: 'catalog:'
         version: 4.4.3
-      zod-defaults:
-        specifier: 'catalog:'
-        version: 0.2.3(zod@4.4.3)
     devDependencies:
       '@vue/test-utils':
         specifier: 'catalog:'
@@ -7171,12 +7159,6 @@ packages:
     resolution: {integrity: sha512-0h+uSNtQGW3D98eQt3jJ8L06Fves8hncB4V/PKdw/Qb8Hnk19VaKuTr55UNRYiSoVa7WwrFls+rh3ux9agmkeQ==}
     engines: {node: '>= 12.0.0'}
 
-  commitlint-plugin-function-rules@5.0.1:
-    resolution: {integrity: sha512-AC8fH83A+soNq9VKTlLptkbg8Zpfx88ng9hKzdiJ0N+GoYgWTWNt6yFA3zEZ0qy3ekQ4Paf1slkaH1UKWRLUvg==}
-    engines: {node: '>=22'}
-    peerDependencies:
-      '@commitlint/lint': '>=19 <22'
-
   common-tags@1.8.2:
     resolution: {integrity: sha512-gk/Z852D2Wtb//0I+kRFNKKE9dIIVirjoqPoA1wJU+XePVXZfGeBpk45+A1rKO4Q43prqWBNY/MiIeRLbPWUaA==}
     engines: {node: '>=4.0.0'}
@@ -11777,11 +11759,6 @@ packages:
   zip-stream@7.0.5:
     resolution: {integrity: sha512-dSvYKdvLsAHCDqPOhIwk/q5CvuWtTB3Dgpoe0uVEFjTzIOAmsQpprX25InCvrvJsirEbu1OHyy67n/kAj1Sw/w==}
     engines: {node: '>=18'}
-
-  zod-defaults@0.2.3:
-    resolution: {integrity: sha512-7pYkOH1/c+Ril5AZUYtsbhMkehkI8CMqzFZ7YZXfC9SMLRvZuLyonQE7BAIVSNxeTpqTZmW5BLxGSzWMnKNdIw==}
-    peerDependencies:
-      zod: ^4.1.12
 
   zod@4.4.3:
     resolution: {integrity: sha512-ytENFjIJFl2UwYglde2jchW2Hwm4GJFLDiSXWdTrJQBIN9Fcyp7n4DhxJEiWNAJMV1/BqWfW/kkg71UDcHJyTQ==}
@@ -16658,10 +16635,6 @@ snapshots:
       esprima: 4.0.1
 
   comment-parser@1.4.7: {}
-
-  commitlint-plugin-function-rules@5.0.1(@commitlint/lint@21.2.4):
-    dependencies:
-      '@commitlint/lint': 21.2.4
 
   common-tags@1.8.2: {}
 
@@ -22142,10 +22115,6 @@ snapshots:
       compress-commons: 7.0.1
       normalize-path: 3.0.0
       readable-stream: 4.7.0
-
-  zod-defaults@0.2.3(zod@4.4.3):
-    dependencies:
-      zod: 4.4.3
 
   zod@4.4.3: {}
 

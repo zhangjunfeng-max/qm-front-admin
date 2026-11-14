@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { z, ZodString } from 'zod';
-import { getDefaultsForSchema } from 'zod-defaults';
+import { getSchemaDefaults } from '../src/schema-defaults';
 
 import {
   getBaseRules,
@@ -54,7 +54,7 @@ describe('zod v4 schema helpers', () => {
       z.object({ count: z.number(), note: z.string().default('note') }),
     );
 
-    expect(getDefaultsForSchema(schema)).toEqual({
+    expect(getSchemaDefaults(schema)).toEqual({
       count: 0,
       enabled: true,
       name: '',
@@ -65,5 +65,18 @@ describe('zod v4 schema helpers', () => {
   it('keeps nullable and coerce input semantics explicit', () => {
     expect(z.string().nullable().safeParse(undefined).success).toBe(false);
     expect(z.coerce.number().parse('42')).toBe(42);
+  });
+
+  it('initialises arrays, formats and wrapped defaults without shared values', () => {
+    const schema = z.object({
+      email: z.email(),
+      flags: z.array(z.string()),
+      enabled: z.boolean(),
+      label: z.string().default('ready').optional(),
+    });
+    const first = getSchemaDefaults(schema);
+    expect(first).toEqual({ email: '', flags: [], enabled: false, label: 'ready' });
+    first.flags.push('changed');
+    expect(getSchemaDefaults(schema).flags).toEqual([]);
   });
 });

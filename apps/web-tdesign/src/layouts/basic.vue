@@ -25,7 +25,7 @@ import LoginForm from '#/views/_core/authentication/login.vue';
 const notifications = ref<NotificationItem[]>([
   {
     id: 1,
-    avatar: 'https://avatar.vercel.sh/vercel.svg?text=VB',
+    avatar: 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2232%22%20fill%3D%22%23edf0f3%22%2F%3E%3Ccircle%20cx%3D%2232%22%20cy%3D%2224%22%20r%3D%2211%22%20fill%3D%22%23b1bac5%22%2F%3E%3Cpath%20d%3D%22M10%2064v-8a22%2022%200%200%201%2044%200v8%22%20fill%3D%22%23b1bac5%22%2F%3E%3C%2Fsvg%3E',
     date: '3小时前',
     isRead: true,
     message: '描述信息描述信息描述信息',
@@ -33,7 +33,7 @@ const notifications = ref<NotificationItem[]>([
   },
   {
     id: 2,
-    avatar: 'https://avatar.vercel.sh/1',
+    avatar: 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2232%22%20fill%3D%22%23edf0f3%22%2F%3E%3Ccircle%20cx%3D%2232%22%20cy%3D%2224%22%20r%3D%2211%22%20fill%3D%22%23b1bac5%22%2F%3E%3Cpath%20d%3D%22M10%2064v-8a22%2022%200%200%201%2044%200v8%22%20fill%3D%22%23b1bac5%22%2F%3E%3C%2Fsvg%3E',
     date: '刚刚',
     isRead: false,
     message: '描述信息描述信息描述信息',
@@ -41,7 +41,7 @@ const notifications = ref<NotificationItem[]>([
   },
   {
     id: 3,
-    avatar: 'https://avatar.vercel.sh/1',
+    avatar: 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2232%22%20fill%3D%22%23edf0f3%22%2F%3E%3Ccircle%20cx%3D%2232%22%20cy%3D%2224%22%20r%3D%2211%22%20fill%3D%22%23b1bac5%22%2F%3E%3Cpath%20d%3D%22M10%2064v-8a22%2022%200%200%201%2044%200v8%22%20fill%3D%22%23b1bac5%22%2F%3E%3C%2Fsvg%3E',
     date: '2024-01-01',
     isRead: false,
     message: '描述信息描述信息描述信息',
@@ -49,7 +49,7 @@ const notifications = ref<NotificationItem[]>([
   },
   {
     id: 4,
-    avatar: 'https://avatar.vercel.sh/satori',
+    avatar: 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2232%22%20fill%3D%22%23edf0f3%22%2F%3E%3Ccircle%20cx%3D%2232%22%20cy%3D%2224%22%20r%3D%2211%22%20fill%3D%22%23b1bac5%22%2F%3E%3Cpath%20d%3D%22M10%2064v-8a22%2022%200%200%201%2044%200v8%22%20fill%3D%22%23b1bac5%22%2F%3E%3C%2Fsvg%3E',
     date: '1天前',
     isRead: false,
     message: '描述信息描述信息描述信息',
@@ -57,7 +57,7 @@ const notifications = ref<NotificationItem[]>([
   },
   {
     id: 5,
-    avatar: 'https://avatar.vercel.sh/satori',
+    avatar: 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2232%22%20fill%3D%22%23edf0f3%22%2F%3E%3Ccircle%20cx%3D%2232%22%20cy%3D%2224%22%20r%3D%2211%22%20fill%3D%22%23b1bac5%22%2F%3E%3Cpath%20d%3D%22M10%2064v-8a22%2022%200%200%201%2044%200v8%22%20fill%3D%22%23b1bac5%22%2F%3E%3C%2Fsvg%3E',
     date: '1天前',
     isRead: false,
     message: '描述信息描述信息描述信息',
@@ -66,7 +66,7 @@ const notifications = ref<NotificationItem[]>([
   },
   {
     id: 6,
-    avatar: 'https://avatar.vercel.sh/satori',
+    avatar: 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Crect%20width%3D%2264%22%20height%3D%2264%22%20rx%3D%2232%22%20fill%3D%22%23edf0f3%22%2F%3E%3Ccircle%20cx%3D%2232%22%20cy%3D%2224%22%20r%3D%2211%22%20fill%3D%22%23b1bac5%22%2F%3E%3Cpath%20d%3D%22M10%2064v-8a22%2022%200%200%201%2044%200v8%22%20fill%3D%22%23b1bac5%22%2F%3E%3C%2Fsvg%3E',
     date: '1天前',
     isRead: false,
     message: '描述信息描述信息描述信息',

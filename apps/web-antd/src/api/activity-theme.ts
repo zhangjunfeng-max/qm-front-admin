@@ -1,9 +1,17 @@
 export type ActivityTheme =
+  | 'coffee'
   | 'festive'
   | 'fresh'
+  | 'gold'
+  | 'lime'
+  | 'navy'
   | 'playful'
   | 'romantic'
-  | 'sky';
+  | 'rose'
+  | 'sky'
+  | 'sunset'
+  | 'teal'
+  | 'violet';
 
 export const activityThemes: {
   value: ActivityTheme;
@@ -52,6 +60,70 @@ export const activityThemes: {
     background: '#F1F8FF',
     text: '#254461',
     description: '教育 · 通用活动',
+  },
+  {
+    value: 'sunset',
+    label: '暖阳橘',
+    color: '#EA580C',
+    background: '#FFF6EE',
+    text: '#4B2C1E',
+    description: '餐饮 · 美食团购',
+  },
+  {
+    value: 'violet',
+    label: '梦幻紫',
+    color: '#8B5CF6',
+    background: '#F7F3FF',
+    text: '#3E2E58',
+    description: '美业 · 艺术体验',
+  },
+  {
+    value: 'teal',
+    label: '湖光青',
+    color: '#0D9488',
+    background: '#EFFAF9',
+    text: '#214843',
+    description: '旅行 · 酒店民宿',
+  },
+  {
+    value: 'gold',
+    label: '香槟金',
+    color: '#B88746',
+    background: '#FCF8EF',
+    text: '#493A25',
+    description: '珠宝 · 礼品庆典',
+  },
+  {
+    value: 'navy',
+    label: '商务蓝',
+    color: '#315C99',
+    background: '#F1F5FB',
+    text: '#253A55',
+    description: '家装 · 汽车服务',
+  },
+  {
+    value: 'coffee',
+    label: '摩卡棕',
+    color: '#8B5E3C',
+    background: '#FAF5EF',
+    text: '#47352B',
+    description: '咖啡 · 烘焙家居',
+  },
+  {
+    value: 'rose',
+    label: '玫瑰红',
+    color: '#C73E67',
+    background: '#FFF2F5',
+    text: '#542C3B',
+    description: '鲜花 · 服饰零售',
+  },
+  {
+    value: 'lime',
+    label: '活力青柠',
+    color: '#729B24',
+    background: '#F7FAEC',
+    text: '#374425',
+    description: '运动 · 户外健身',
   },
 ];
 

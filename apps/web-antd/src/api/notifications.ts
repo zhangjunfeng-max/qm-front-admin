@@ -11,6 +11,7 @@ export interface Notice {
 }
 export interface NoticeDetail extends Notice {
   link: string;
+  changes?: { field: string; label: string; before: string; after: string }[];
 }
 export interface NoticeQuery {
   page: number;
@@ -30,7 +31,7 @@ export interface Announcement {
   title: string;
   message: string;
   audience: 'all' | 'roles' | 'users';
-  roles?: ('admin' | 'member' | 'owner')[];
+  roles?: ('admin' | 'member')[];
   userIds?: string[];
   companyIds?: string[];
 }

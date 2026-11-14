@@ -14,8 +14,11 @@ const stores = reactive({
     switchingTenant: false,
     reloadingContext: false,
   },
-  user: { userInfo: { userId: 'user-a', roles: ['owner'] } },
+  user: { userInfo: { userId: 'user-a', roles: ['admin'] } },
 });
+vi.mock('#/components/performance/performance-panel.vue', () => ({
+  default: { template: '<section>独立业绩排行榜</section>' },
+}));
 vi.mock('#/api/company-overview', () => ({
   getCompanyOverviewApi: api.overview,
 }));
@@ -39,7 +42,8 @@ function response(manager = true) {
     generatedAt: '2026-11-01T00:30:00Z',
     month: '2026-11',
     manager,
-    canManageOrders: manager,
+    personal: { registrations: 1, paidOrders: 1, netRevenueCent: 5000 },
+    joinedActivities: 2,
     summary: {
       netRevenueCent: 9900,
       collectedCent: 19800,
@@ -95,7 +99,7 @@ function click(label: string) {
 beforeEach(() => {
   stores.auth.currentTenant = { id: 'a', name: '第一公司' };
   stores.auth.switchingTenant = false;
-  stores.user.userInfo = { userId: 'user-a', roles: ['owner'] };
+  stores.user.userInfo = { userId: 'user-a', roles: ['admin'] };
   api.overview.mockReset().mockResolvedValue(response());
   api.push.mockReset();
   invalidateContext();
@@ -110,17 +114,17 @@ afterEach(() => {
 describe('company homepage', () => {
   it('consolidates six metrics, rankings and shortcuts, with profile editing on demand', async () => {
     const root = mount();
-    await vi.waitFor(() => expect(root.textContent).toContain('本公司销售甲'));
+    await vi.waitFor(() => expect(root.textContent).toContain('待支付 5'));
     expect(root.querySelectorAll('[data-metric]')).toHaveLength(6);
     expect(root.textContent).toContain('本月净收入');
     expect(root.textContent).toContain('累计真实浏览');
     expect(root.textContent).toContain('待支付 5');
     expect(root.textContent).toContain('待报名 6');
-    expect(root.textContent).toContain('摄影活动');
+    expect(root.textContent).toContain('独立业绩排行榜');
     expect(root.textContent).not.toContain('利润');
     expect(root.textContent).not.toContain('公司资料编辑表单');
-    click('活动订单');
-    expect(api.push).toHaveBeenCalledWith('/orders');
+    click('报名记录');
+    expect(api.push).toHaveBeenCalledWith('/registrations');
     click('公司资料');
     await vi.waitFor(() =>
       expect(document.body.textContent).toContain('公司资料编辑表单'),
@@ -128,7 +132,7 @@ describe('company homepage', () => {
   });
   it('clears previous company data and ignores responses across A to B to A', async () => {
     const root = mount();
-    await vi.waitFor(() => expect(root.textContent).toContain('本公司销售甲'));
+    await vi.waitFor(() => expect(root.textContent).toContain('待支付 5'));
     let finishB!: (data: ReturnType<typeof response>) => void;
     let finishA!: (data: ReturnType<typeof response>) => void;
     api.overview.mockImplementationOnce(
@@ -140,8 +144,8 @@ describe('company homepage', () => {
     invalidateContext();
     stores.auth.currentTenant = { id: 'b', name: '第二公司' };
     await nextTick();
-    expect(root.textContent).not.toContain('本公司销售甲');
-    const signalB = api.overview.mock.calls.at(-1)![1] as AbortSignal;
+    expect(root.textContent).not.toContain('待支付 5');
+    const signalB = api.overview.mock.calls.at(-1)![0] as AbortSignal;
     api.overview.mockImplementationOnce(
       () =>
         new Promise((resolve) => {
@@ -153,35 +157,30 @@ describe('company homepage', () => {
     await nextTick();
     expect(signalB.aborted).toBe(true);
     const old = response();
-    old.employees[0]!.name = '第二公司泄露';
+    old.summary.pendingPayment = 111;
     finishB(old);
     await nextTick();
-    expect(root.textContent).not.toContain('第二公司泄露');
+    expect(root.textContent).not.toContain('待支付 111');
     const current = response();
-    current.employees[0]!.name = '第一公司新数据';
+    current.summary.pendingPayment = 123;
     finishA(current);
-    await vi.waitFor(() =>
-      expect(root.textContent).toContain('第一公司新数据'),
-    );
+    await vi.waitFor(() => expect(root.textContent).toContain('待支付 123'));
   });
   it('shows company statistics to ordinary staff without granting management shortcuts', async () => {
     stores.user.userInfo.roles = ['member'];
     api.overview.mockResolvedValue(response(false));
     const root = mount();
-    await vi.waitFor(() => expect(root.textContent).toContain('本公司销售甲'));
-    for (const label of [
-      '活动订单',
-      '客户管理',
-      '员工管理',
-      '门店管理',
-      '公司资料',
-    ])
+    await vi.waitFor(() => expect(root.textContent).toContain('待支付 5'));
+    for (const label of ['员工管理', '门店管理', '公司资料'])
       expect(
         [...root.querySelectorAll('button')].some(
           (b) => b.textContent?.trim() === label,
         ),
       ).toBe(false);
-    expect(root.textContent).toContain('活动管理');
+    expect(root.textContent).toContain('我参加的活动');
+    expect(root.textContent).toContain('我的本月业绩');
+    click('报名记录');
+    expect(api.push).toHaveBeenCalledWith('/registrations');
     expect(root.querySelector('[data-metric="views"]')?.textContent).toContain(
       '100',
     );
@@ -194,8 +193,8 @@ describe('company homepage', () => {
       expect(root.textContent).toContain('运营数据加载失败'),
     );
     click('重试');
-    await vi.waitFor(() => expect(root.textContent).toContain('本公司销售甲'));
-    const signal = api.overview.mock.calls.at(-1)![1] as AbortSignal;
+    await vi.waitFor(() => expect(root.textContent).toContain('待支付 5'));
+    const signal = api.overview.mock.calls.at(-1)![0] as AbortSignal;
     cleanup?.();
     cleanup = undefined;
     expect(signal.aborted).toBe(true);
@@ -215,30 +214,10 @@ describe('company homepage', () => {
     await nextTick();
     expect(document.body.textContent).not.toContain('公司资料编辑表单');
   });
-  it('fetches top ten and switches ranking criteria', async () => {
-    mount();
-    await vi.waitFor(() => expect(api.overview).toHaveBeenCalledOnce());
-    const ten = [...document.querySelectorAll('.ant-segmented-item')].find(
-      (e) => e.textContent?.includes('前10'),
-    );
-    expect(ten).toBeDefined();
-    (ten as HTMLElement).click();
-    await vi.waitFor(() =>
-      expect(api.overview.mock.calls.at(-1)![0]).toMatchObject({
-        limit: 10,
-        rankBy: 'revenue',
-      }),
-    );
-    const registrations = [
-      ...document.querySelectorAll('.ant-segmented-item'),
-    ].find((e) => e.textContent === '报名人数');
-    expect(registrations).toBeDefined();
-    (registrations as HTMLElement).click();
-    await vi.waitFor(() =>
-      expect(api.overview.mock.calls.at(-1)![0]).toMatchObject({
-        limit: 10,
-        rankBy: 'registrations',
-      }),
-    );
+  it('mounts the independent monthly ranking panel', async () => {
+    const root = mount();
+    await vi.waitFor(() => expect(root.textContent).toContain('待支付 5'));
+    expect(root.textContent).toContain('独立业绩排行榜');
+    expect(api.overview).toHaveBeenCalledOnce();
   });
 });

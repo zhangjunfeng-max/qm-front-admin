@@ -136,4 +136,11 @@ onMounted(load);
 .tenant-switcher-name {
   display: block;
 }
+
+@media (max-width: 767px) {
+  .tenant-switcher-trigger {
+    max-width: min(180px, calc(100vw - 180px));
+    padding-inline: 8px;
+  }
+}
 </style>

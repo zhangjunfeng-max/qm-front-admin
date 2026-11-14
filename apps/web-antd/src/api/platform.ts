@@ -43,7 +43,7 @@ export namespace PlatformApi {
     tenantId: string;
     name: string;
     employeeName: string;
-    role: 'admin' | 'member' | 'owner';
+    role: 'admin' | 'member';
     status: 'active' | 'disabled';
     tenantStatus: 'active' | 'disabled';
   }
@@ -69,6 +69,70 @@ export namespace PlatformApi {
     'displayName' | 'isPlatformAdmin' | 'status'
   >;
   export type UserCreate = UserUpdate & { phone: string; password: string };
+  export type PaymentProvider = 'aggregate' | 'alipay' | 'wechat';
+  export interface PaymentBinding {
+    tenantId: string;
+    tenantName: string;
+    tenantAlias: string;
+    isDefault: boolean;
+    status: 'active' | 'disabled';
+    enableJsapi: boolean;
+    miniappIds: string[];
+  }
+  export interface PaymentAccount {
+    id: string;
+    provider: PaymentProvider;
+    accountName: string;
+    externalAccountId: string;
+    maskedAccount: string;
+    callbackKey: string;
+    capabilities: string[];
+    merchantSerialNumber: string;
+    status: 'active' | 'disabled';
+    changeLockedReason: string;
+    lastVerifiedAt: null | string;
+    version: number;
+    hasApiV3Key: boolean;
+    hasPrivateKey: boolean;
+    hasWechatPayPublicKey: boolean;
+    bindings: PaymentBinding[];
+    updatedAt: string;
+  }
+  export interface PaymentAccountInput {
+    provider: PaymentProvider;
+    accountName: string;
+    externalAccountId: string;
+    callbackKey: string;
+    capabilities: string[];
+    apiV3Key: string;
+    merchantPrivateKey: string;
+    merchantSerialNumber: string;
+    wechatPayPublicKey: string;
+    wechatPayPublicKeyId: string;
+    status: 'active' | 'disabled';
+    version: number;
+  }
+  export interface PaymentBindingInput {
+    tenantAlias: string;
+    isDefault: boolean;
+    status: 'active' | 'disabled';
+    enableJsapi: boolean;
+    miniappIds: string[];
+  }
+  export interface PaymentAccountQuery {
+    tenantId?: string;
+    provider?: PaymentProvider;
+    status?: 'active' | 'disabled';
+    page?: number;
+    pageSize?: number;
+  }
+  export interface MiniappOption {
+    id: string;
+    name: string;
+    appid: string;
+    status: 'active' | 'disabled';
+    authorizationStatus: 'authorized' | 'pending' | 'unauthorized';
+  }
 }
 export function getPlatformTenantsApi(params: PlatformApi.TenantQuery) {
   return requestClient.get<PlatformApi.TenantPage>('/platform/tenants', {
@@ -95,9 +159,9 @@ export function updatePlatformTenantApi(id: string, data: TenantUpdate) {
 }
 
 export type TenantCreate = TenantUpdate & {
-  ownerPhone: string;
-  ownerName: string;
-  ownerPassword?: string;
+  adminPhone: string;
+  adminName: string;
+  adminPassword?: string;
 };
 export function createPlatformTenantApi(data: TenantCreate) {
   return requestClient.post<PlatformApi.Tenant>('/platform/tenants', data);
@@ -120,4 +184,58 @@ export function updatePlatformUserApi(
 }
 export function createPlatformUserApi(data: PlatformApi.UserCreate) {
   return requestClient.post<PlatformApi.UserDetail>('/platform/users', data);
+}
+
+export function getPlatformPaymentAccountsApi(params: PlatformApi.PaymentAccountQuery) {
+  return requestClient.get<{
+    items: PlatformApi.PaymentAccount[];
+    page: number;
+    pageSize: number;
+    total: number;
+  }>('/platform/payment-accounts', { params });
+}
+export function getPlatformPaymentAccountApi(id: string) {
+  return requestClient.get<PlatformApi.PaymentAccount>(
+    `/platform/payment-accounts/${id}`,
+  );
+}
+export function createPlatformPaymentAccountApi(
+  data: PlatformApi.PaymentAccountInput,
+) {
+  return requestClient.post<PlatformApi.PaymentAccount>(
+    '/platform/payment-accounts',
+    data,
+  );
+}
+export function updatePlatformPaymentAccountApi(
+  id: string,
+  data: PlatformApi.PaymentAccountInput,
+) {
+  return requestClient.put<PlatformApi.PaymentAccount>(
+    `/platform/payment-accounts/${id}`,
+    data,
+  );
+}
+export function bindPlatformPaymentAccountApi(
+  accountId: string,
+  tenantId: string,
+  data: PlatformApi.PaymentBindingInput,
+) {
+  return requestClient.put<PlatformApi.PaymentAccount>(
+    `/platform/payment-accounts/${accountId}/tenants/${tenantId}`,
+    data,
+  );
+}
+export function unbindPlatformPaymentAccountApi(
+  accountId: string,
+  tenantId: string,
+) {
+  return requestClient.delete(
+    `/platform/payment-accounts/${accountId}/tenants/${tenantId}`,
+  );
+}
+export function getPlatformPaymentMiniappsApi(tenantId: string) {
+  return requestClient.get<{ items: PlatformApi.MiniappOption[] }>(
+    `/platform/tenants/${tenantId}/payment-miniapps`,
+  );
 }

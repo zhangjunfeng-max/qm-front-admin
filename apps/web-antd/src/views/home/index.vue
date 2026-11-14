@@ -1,8 +1,5 @@
 <script setup lang="ts">
-import type {
-  CompanyBusinessOverview,
-  CompanyOverviewQuery,
-} from '#/api/company-overview';
+import type { CompanyBusinessOverview } from '#/api/company-overview';
 
 import { computed, onUnmounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
@@ -15,7 +12,6 @@ import {
   Button,
   Card,
   Drawer,
-  Segmented,
   Space,
   Spin,
   Tooltip,
@@ -24,10 +20,10 @@ import {
 import { getCompanyOverviewApi } from '#/api/company-overview';
 import { captureContext } from '#/api/context-lifecycle';
 import CompanyProfile from '#/components/management/company-profile.vue';
+import PerformancePanel from '#/components/performance/performance-panel.vue';
 import { useAuthStore } from '#/store';
 
 import { count, money } from './format';
-import PerformanceRanking from './performance-ranking.vue';
 
 const authStore = useAuthStore();
 const userStore = useUserStore();
@@ -36,16 +32,12 @@ const overview = ref<CompanyBusinessOverview | null>(null);
 const loading = ref(false);
 const failed = ref(false);
 const showProfile = ref(false);
-const limit = ref<5 | 10>(5);
-const rankBy = ref<CompanyOverviewQuery['rankBy']>('revenue');
 const canEditCompany = computed(() =>
   Boolean(
     authStore.currentTenant?.id &&
-      !authStore.switchingTenant &&
-      !authStore.reloadingContext &&
-      userStore.userInfo?.roles?.some(
-        (role) => role === 'owner' || role === 'admin',
-      ),
+    !authStore.switchingTenant &&
+    !authStore.reloadingContext &&
+    userStore.userInfo?.roles?.some((role) => role === 'admin'),
   ),
 );
 let controller: AbortController | undefined;
@@ -97,16 +89,25 @@ const metrics = computed(() => [
 ]);
 const shortcuts = computed(() =>
   [
-    { name: '活动管理', path: '/activities', visible: true },
     {
-      name: '活动订单',
-      path: '/orders',
-      visible: overview.value?.canManageOrders,
+      name: '创建活动',
+      path: '/activities?create=1',
+      visible: canEditCompany.value,
+    },
+    {
+      name: overview.value?.manager ? '活动管理' : '我参加的活动',
+      path: '/activities',
+      visible: true,
+    },
+    {
+      name: '报名记录',
+      path: '/registrations',
+      visible: true,
     },
     {
       name: '客户管理',
       path: '/customers',
-      visible: overview.value?.canManageOrders,
+      visible: true,
     },
     { name: '员工管理', path: '/employees', visible: overview.value?.manager },
     { name: '门店管理', path: '/stores', visible: overview.value?.manager },
@@ -145,10 +146,7 @@ async function load() {
   const context = captureContext();
   loading.value = true;
   try {
-    const value = await getCompanyOverviewApi(
-      { limit: limit.value, rankBy: rankBy.value },
-      request.signal,
-    );
+    const value = await getCompanyOverviewApi(request.signal);
     if (current !== version || request.signal.aborted) return;
     context.assertCurrent();
     overview.value = value;
@@ -157,14 +155,6 @@ async function load() {
   } finally {
     if (current === version) loading.value = false;
   }
-}
-function changeLimit(value: number | string) {
-  limit.value = value === 10 ? 10 : 5;
-  void load();
-}
-function changeRank(value: number | string) {
-  rankBy.value = value === 'registrations' ? 'registrations' : 'revenue';
-  void load();
 }
 watch(
   [
@@ -197,6 +187,12 @@ onUnmounted(() => {
         <span class="text-muted-foreground text-xs">
           {{ overview?.month ?? '本月' }} · {{ updatedAt }} 更新
         </span>
+        <Button
+          v-if="canEditCompany"
+          type="primary"
+          @click="router.push('/activities?create=1')"
+          >创建活动</Button
+        >
         <Button v-if="canEditCompany" @click="showProfile = true">
           公司资料
         </Button>
@@ -213,6 +209,71 @@ onUnmounted(() => {
         <Button size="small" @click="load">重试</Button>
       </template>
     </Alert>
+    <Card
+      v-if="!authStore.profile?.isPlatformAdmin"
+      size="small"
+      title="我的本月业绩"
+    >
+      <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div>
+          <div class="text-muted-foreground text-sm">报名人数</div>
+          <Button
+            type="link"
+            class="!h-auto !px-0 !text-xl"
+            @click="
+              router.push({
+                path: '/registrations',
+                query: {
+                  onlySelf: 'true',
+                  period: 'month',
+                  event: 'registrations',
+                  status: 'registered',
+                },
+              })
+            "
+            >{{ count(overview?.personal?.registrations) }}</Button
+          >
+        </div>
+        <div>
+          <div class="text-muted-foreground text-sm">成交订单</div>
+          <Button
+            type="link"
+            class="!h-auto !px-0 !text-xl"
+            @click="
+              router.push({
+                path: '/registrations',
+                query: { onlySelf: 'true', period: 'month', event: 'paid' },
+              })
+            "
+            >{{ count(overview?.personal?.paidOrders) }}</Button
+          >
+        </div>
+        <div>
+          <div class="text-muted-foreground text-sm">净成交金额</div>
+          <Button
+            type="link"
+            class="!h-auto !px-0 !text-xl"
+            @click="
+              router.push({
+                path: '/registrations',
+                query: { onlySelf: 'true', period: 'month', event: 'paid' },
+              })
+            "
+            >{{ money(overview?.personal?.netRevenueCent) }}</Button
+          >
+        </div>
+        <div>
+          <div class="text-muted-foreground text-sm">我参加的活动</div>
+          <Button
+            type="link"
+            class="!px-0"
+            @click="router.push('/activities?onlyJoined=true')"
+          >
+            {{ count(overview?.joinedActivities) }} 场
+          </Button>
+        </div>
+      </div>
+    </Card>
     <Spin :spinning="loading">
       <div
         class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6"
@@ -263,51 +324,7 @@ onUnmounted(() => {
         </Button>
       </div>
     </Card>
-    <section class="min-w-0">
-      <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
-        <div class="flex flex-wrap items-baseline gap-2">
-          <h2 class="text-base font-semibold">本月业绩排行</h2>
-          <span class="text-muted-foreground text-xs">
-            公司数据
-          </span>
-        </div>
-        <Space wrap>
-          <Segmented
-            :value="rankBy"
-            :options="[
-              { label: '净收入', value: 'revenue' },
-              { label: '报名人数', value: 'registrations' },
-            ]"
-            size="small"
-            @change="changeRank"
-          />
-          <Segmented
-            :value="limit"
-            :options="[
-              { label: '前5名', value: 5 },
-              { label: '前10名', value: 10 },
-            ]"
-            size="small"
-            @change="changeLimit"
-          />
-        </Space>
-      </div>
-      <div class="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-2">
-        <PerformanceRanking
-          title="员工排行"
-          :items="overview?.employees ?? []"
-          :loading="loading"
-          :failed="failed"
-        />
-        <PerformanceRanking
-          title="小组排行"
-          group
-          :items="overview?.groups ?? []"
-          :loading="loading"
-          :failed="failed"
-        />
-      </div>
-    </section>
+    <PerformancePanel />
     <Drawer
       v-if="showProfile && canEditCompany"
       v-model:open="showProfile"

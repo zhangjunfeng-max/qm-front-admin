@@ -7,13 +7,7 @@ const routes: RouteRecordRaw[] = [
     component: () => import('#/views/notifications/index.vue'),
     meta: {
       title: '通知中心',
-      authority: [
-        'owner',
-        'admin',
-        'member',
-        'activity_manager',
-        'platform_admin',
-      ],
+      authority: ['admin', 'member', 'platform_admin'],
       hideInMenu: true,
     },
   },

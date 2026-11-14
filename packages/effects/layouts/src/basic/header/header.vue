@@ -14,7 +14,7 @@ import {
   VbenTooltip,
 } from '@vben-core/shadcn-ui';
 
-import { useMagicKeys, whenever } from '@vueuse/core';
+import { useMagicKeys, useWindowSize, whenever } from '@vueuse/core';
 
 import {
   GlobalSearch,
@@ -64,9 +64,11 @@ const {
   globalLockScreenShortcutKey,
   globalLogoutShortcutKey,
   globalSearchShortcutKey,
+  isMobile,
   preferencesButtonPosition,
 } = usePreferences();
 const slots = useSlots();
+const { width: viewportWidth } = useWindowSize();
 const { refresh } = useRefresh();
 
 const showLockInHeader = computed(
@@ -207,7 +209,10 @@ const rightSlots = computed(() => {
 
   for (const key of preferences.widget.order) {
     const check = widgetChecks[key];
-    if (check?.visible) {
+    if (
+      check?.visible &&
+      ((!isMobile.value && viewportWidth.value >= 1024) || key === 'notification')
+    ) {
       list.push({ index: REFERENCE_VALUE + list.length, name: check.slotName });
     }
   }

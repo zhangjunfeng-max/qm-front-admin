@@ -12,6 +12,8 @@ function filePath(activityId: string) {
   return activityId ? `/admin/activities/${activityId}/files` : '/admin/files';
 }
 export async function uploadActivityMedia(file: File, activityId: string) {
+  if (file.type.startsWith('audio/') || /\.(mp3|m4a|wav|ogg)$/i.test(file.name))
+    throw new ActivityMediaUploadError('请从音乐库选择背景音乐');
   const context = captureContext();
   const ticket = await requestClient.post<UploadTicket>(
     `${filePath(activityId)}/presign-upload`,

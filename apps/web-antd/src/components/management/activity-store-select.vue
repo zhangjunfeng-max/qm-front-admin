@@ -1,19 +1,80 @@
 <script setup lang="ts">
 import type { StoreOption } from '#/api/management';
 
-import { computed, onBeforeUnmount, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue';
 
-import { Button, Select } from 'ant-design-vue';
+import {
+  Button,
+  Form,
+  FormItem,
+  Input,
+  message,
+  Modal,
+  Select,
+} from 'ant-design-vue';
 
 import { collectSelection } from '#/api/batch-selection';
-import { getActivityStoreOptions } from '#/api/management';
+import { captureContext } from '#/api/context-lifecycle';
+import { getActivityStoreOptions, saveStore } from '#/api/management';
 
 const props = defineProps<{
   open: boolean;
   disabled?: boolean;
   activityId: string;
   selectedStores: StoreOption[];
+  allowCreate?: boolean;
 }>();
+let storeLifetime = 0;
+const createOpen = ref(false);
+const creating = ref(false);
+const storeForm = reactive({
+  name: '',
+  address: '',
+  contactName: '',
+  contactPhone: '',
+  remark: '',
+  status: 'active' as const,
+});
+async function createStore() {
+  if (creating.value) return;
+  if (!storeForm.name.trim()) {
+    message.warning('请输入门店名称');
+    return;
+  }
+  if (
+    storeForm.contactPhone &&
+    !/^[+\d\s-]{5,30}$/.test(storeForm.contactPhone)
+  ) {
+    message.warning('请填写正确的联系电话');
+    return;
+  }
+  const context = captureContext();
+  const lifetime = storeLifetime;
+  creating.value = true;
+  try {
+    const store = await saveStore('', {
+      ...storeForm,
+      name: storeForm.name.trim(),
+    });
+    context.assertCurrent();
+    if (lifetime !== storeLifetime || !props.open) return;
+    cache.value[store.id] = store;
+    rows.value = [store, ...rows.value.filter((s) => s.id !== store.id)];
+    selected.value = [...new Set([...selected.value, store.id])];
+    createOpen.value = false;
+    message.success('门店已添加');
+    Object.assign(storeForm, {
+      name: '',
+      address: '',
+      contactName: '',
+      contactPhone: '',
+      remark: '',
+      status: 'active',
+    });
+  } finally {
+    if (lifetime === storeLifetime) creating.value = false;
+  }
+}
 const selected = defineModel<string[]>({ required: true });
 const busy = defineModel<boolean>('busy', { default: false });
 const rows = ref<StoreOption[]>([]);
@@ -23,9 +84,9 @@ const failed = ref(false);
 const selecting = ref(false);
 const selectionError = ref('');
 watch(
-  selecting,
-  (value) => {
-    busy.value = value;
+  [selecting, creating],
+  () => {
+    busy.value = selecting.value || creating.value;
   },
   { flush: 'sync' },
 );
@@ -137,6 +198,9 @@ async function selectAll() {
 watch(
   () => [props.open, props.activityId],
   () => {
+    storeLifetime++;
+    createOpen.value = false;
+    creating.value = false;
     clearTimeout(timer);
     ++selectionVersion;
     selecting.value = false;
@@ -152,6 +216,7 @@ watch(
   { immediate: true },
 );
 onBeforeUnmount(() => {
+  storeLifetime++;
   ++selectionVersion;
   clearTimeout(timer);
   ++request;
@@ -197,6 +262,15 @@ onBeforeUnmount(() => {
       >
         清空
       </Button>
+      <Button
+        v-if="allowCreate"
+        type="link"
+        size="small"
+        :disabled="disabled || creating"
+        @click="createOpen = true"
+      >
+        新建门店
+      </Button>
       <span>已选 {{ selected.length }} 家</span>
     </div>
     <div
@@ -210,5 +284,29 @@ onBeforeUnmount(() => {
       门店加载失败
       <Button type="link" size="small" @click="load(true)">重试</Button>
     </div>
+    <Modal
+      :open="createOpen"
+      title="新建门店"
+      :confirm-loading="creating"
+      :mask-closable="!creating"
+      @ok="createStore"
+      @cancel="!creating && (createOpen = false)"
+    >
+      <Form layout="vertical" :disabled="creating">
+        <FormItem label="门店名称" required>
+          <Input v-model:value="storeForm.name" :maxlength="100" />
+        </FormItem>
+        <FormItem label="门店地址">
+          <Input v-model:value="storeForm.address" :maxlength="500" />
+        </FormItem>
+        <FormItem label="联系电话">
+          <Input
+            v-model:value="storeForm.contactPhone"
+            inputmode="tel"
+            :maxlength="30"
+          />
+        </FormItem>
+      </Form>
+    </Modal>
   </div>
 </template>

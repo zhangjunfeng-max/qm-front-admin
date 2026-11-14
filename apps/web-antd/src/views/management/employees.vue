@@ -41,7 +41,6 @@ const {
 const open = ref(false);
 const saving = ref(false);
 const editingId = ref('');
-const owner = ref(false);
 const form = reactive<EmployeeInput>({
   phone: '',
   password: '',
@@ -54,7 +53,6 @@ const form = reactive<EmployeeInput>({
 const userStore = useUserStore();
 function edit(row?: Employee) {
   editingId.value = row?.userId || '';
-  owner.value = row?.role === 'owner';
   Object.assign(form, {
     phone: row?.phone || '',
     password: '',
@@ -144,7 +142,7 @@ const columns = [
       <template #bodyCell="{ column, record }">
         <template v-if="column.key === 'role'">
           {{
-            { owner: '公司负责人', admin: '公司管理员', member: '员工' }[
+            { admin: '公司管理员', member: '员工' }[
               record.role as Employee['role']
             ]
           }}
@@ -198,15 +196,11 @@ const columns = [
           <FormItem label="公司角色">
             <Select
               v-model:value="form.role"
-              :disabled="owner || editingId === userStore.userInfo?.userId"
-              :options="
-                owner
-                  ? [{ label: '公司负责人', value: 'owner' }]
-                  : [
-                      { label: '员工', value: 'member' },
-                      { label: '公司管理员', value: 'admin' },
-                    ]
-              "
+              :disabled="editingId === userStore.userInfo?.userId"
+              :options="[
+                { label: '员工', value: 'member' },
+                { label: '公司管理员', value: 'admin' },
+              ]"
             />
           </FormItem>
           <Alert
@@ -227,7 +221,7 @@ const columns = [
           <FormItem label="状态">
             <Select
               v-model:value="form.status"
-              :disabled="editingId === userStore.userInfo?.userId || owner"
+              :disabled="editingId === userStore.userInfo?.userId"
               :options="[
                 { label: '正常', value: 'active' },
                 { label: '已停用', value: 'disabled' },

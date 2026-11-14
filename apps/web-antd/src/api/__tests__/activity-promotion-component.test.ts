@@ -8,8 +8,13 @@ import ActivityPromotion from '../../components/management/activity-promotion.vu
 import { defaultActivity } from '../activity-form';
 import { invalidateContext } from '../context-lifecycle';
 
-const api = vi.hoisted(() => ({ post: vi.fn(), qr: vi.fn() }));
-vi.mock('#/api/request', () => ({ requestClient: { post: api.post } }));
+const api = vi.hoisted(() => ({ post: vi.fn(), entry: vi.fn(), qr: vi.fn() }));
+vi.mock('#/api/request', () => ({
+  requestClient: {
+    post: (url: string, ...args: unknown[]) =>
+      url.endsWith('/entry') ? api.entry(url, ...args) : api.post(url, ...args),
+  },
+}));
 vi.mock('qrcode', () => ({ default: { toDataURL: api.qr } }));
 const png = 'data:image/png;base64,aGVsbG8=';
 const jpeg = 'data:image/jpeg;base64,bmV3';
@@ -22,6 +27,7 @@ function record(
 ): Activity {
   return {
     ...defaultActivity(),
+ musicUrl: '', musicName: '', musicStatus: '',
     id,
     channel,
     name: '夏日活动',
@@ -50,7 +56,10 @@ function record(
     memberCount: 0,
     groupCount: 0,
     currentRole: 'admin',
+    canJoin: false,
     canEdit: true,
+    canEditCore: false,
+    canEditSchedule: false,
     canManageMembers: true,
     canManageGroups: true,
     canReviewApplications: true,
@@ -95,6 +104,7 @@ async function miniappTab() {
 }
 beforeEach(() => {
   api.post.mockReset();
+  api.entry.mockReset().mockResolvedValue({ code: 'AbCdEfGh1234_-56' });
   api.qr.mockReset().mockResolvedValue(png);
   vi.stubEnv('VITE_ACTIVITY_H5_URL', 'http://localhost:5173/');
 });
@@ -109,7 +119,7 @@ it('renders an H5 customer link and QR without issuing a mini program request', 
   mount(record(idA, 'h5'));
   await vi.waitFor(() => expect(document.querySelector('img')?.src).toBe(png));
   expect(document.querySelector('textarea')?.value).toBe(
-    'http://localhost:5173/#/pages/index/index?id=12345678-1234-1234-1234-123456789abc',
+    'http://localhost:5173/?c=AbCdEfGh1234_-56',
   );
   expect(document.body.textContent).not.toContain('小程序');
   expect(api.post).not.toHaveBeenCalled();
@@ -118,7 +128,7 @@ it('renders an H5 customer link and QR without issuing a mini program request', 
   button('复制链接').click();
   await vi.waitFor(() =>
     expect(copy).toHaveBeenCalledWith(
-      'http://localhost:5173/#/pages/index/index?id=12345678-1234-1234-1234-123456789abc',
+      'http://localhost:5173/?c=AbCdEfGh1234_-56',
     ),
   );
 });

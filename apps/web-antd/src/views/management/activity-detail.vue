@@ -3,7 +3,6 @@ import type {
   Activity,
   ActivityEmployee,
   ActivityGroup,
-  ActivityRole,
 } from '#/api/management';
 
 import {
@@ -17,6 +16,7 @@ import {
 import { useRoute, useRouter } from 'vue-router';
 
 import { Page } from '@vben/common-ui';
+import { useUserStore } from '@vben/stores';
 
 import {
   Alert,
@@ -24,6 +24,7 @@ import {
   Card,
   Descriptions,
   DescriptionsItem,
+  Drawer,
   Form,
   FormItem,
   Input,
@@ -32,8 +33,6 @@ import {
   Select,
   Space,
   Spin,
-  TabPane,
-  Tabs,
   Tag,
 } from 'ant-design-vue';
 import QRCode from 'qrcode';
@@ -46,18 +45,22 @@ import {
 import { activityThemePreset } from '#/api/activity-theme';
 import {
   applyActivity,
+  assignActivityEmployee,
   getActivity,
   getActivityGroups,
   getActivityInvitation,
   getMyMembership,
 } from '#/api/management';
 import ActivityActions from '#/components/management/activity-actions.vue';
+import ActivityPreview from '#/components/management/activity-preview.vue';
 import ActivityPromotion from '#/components/management/activity-promotion.vue';
+import PerformancePanel from '#/components/performance/performance-panel.vue';
+import { useAuthStore } from '#/store';
 
 import ActivityEditor from './activity-editor.vue';
-import ActivityGroups from './activity-groups.vue';
 import ActivityMembers from './activity-members.vue';
-import ActivityStores from './activity-stores.vue';
+const userStore = useUserStore();
+const auth = useAuthStore();
 const route = useRoute();
 const router = useRouter();
 const id = computed(() => String(route.params.id));
@@ -66,16 +69,18 @@ const membership = ref<ActivityEmployee | null>(null);
 const groups = ref<ActivityGroup[]>([]);
 const applying = ref(false);
 const applyOpen = ref(false);
-const editOpen = ref(false);
+const editOpen = ref(route.query?.edit === '1');
+const previewOpen = ref(false);
 const failed = ref(false);
 const invitationOpen = ref(false);
 const promotionOpen = ref(false);
+const performanceOpen = ref(route.query?.ranking === '1');
 const inviteUrl = ref('');
 const inviting = ref(false);
 const loading = ref(false);
 const qrDataUrl = ref('');
 const form = reactive({
-  role: 'member' as ActivityRole,
+  role: 'member' as const,
   groupId: null as null | string,
 });
 let detailRequest = 0;
@@ -101,6 +106,21 @@ async function load() {
     if (request === detailRequest) loading.value = false;
   }
 }
+async function joinAsCompanyAdmin() {
+  if (!activity.value?.canJoin || applying.value) return;
+  applying.value = true;
+  try {
+    await assignActivityEmployee(id.value, userStore.userInfo!.userId, {
+      role: 'member',
+      groupId: null,
+      status: 'approved',
+    });
+    message.success('已加入活动');
+    await load();
+  } finally {
+    applying.value = false;
+  }
+}
 async function openApply() {
   try {
     groups.value = (await getActivityGroups(id.value)).items;
@@ -110,15 +130,11 @@ async function openApply() {
   } catch {}
 }
 async function apply() {
-  if (form.role === 'leader' && !form.groupId) {
-    message.warning('请选择小组');
-    return;
-  }
   applying.value = true;
   try {
     await applyActivity(id.value, {
       role: form.role,
-      groupId: form.role === 'admin' ? null : form.groupId,
+      groupId: form.groupId,
     });
     message.success('申请已提交，请等待审核');
     applyOpen.value = false;
@@ -132,7 +148,10 @@ async function invitation(reset = false) {
   inviting.value = true;
   try {
     const r = await getActivityInvitation(id.value, reset);
-    inviteUrl.value = new URL(r.registrationPath, window.location.origin).href;
+    inviteUrl.value = new URL(
+      router.resolve(r.registrationPath).href,
+      window.location.href,
+    ).href;
     qrDataUrl.value = await QRCode.toDataURL(inviteUrl.value, {
       width: 240,
       margin: 2,
@@ -153,24 +172,87 @@ async function copy() {
 }
 watch(id, () => {
   promotionOpen.value = false;
+  performanceOpen.value = false;
   activity.value = undefined;
   membership.value = null;
   void load();
 });
+watch(
+  () => route.query?.edit,
+  (value) => {
+    editOpen.value = value === '1';
+  },
+);
+watch(
+  () => route.query?.ranking,
+  (value) => {
+    performanceOpen.value = value === '1';
+  },
+);
+function finishEditing() {
+  editOpen.value = false;
+  const { edit: _edit, ...query } = route.query || {};
+  void router.replace({ query });
+}
+function saved() {
+  finishEditing();
+  void load();
+}
 onMounted(load);
 </script>
 <template>
   <Page
-    :title="activity?.name || '活动详情'"
+    :title="activity?.name || '活动工作区'"
     content-class="flex flex-col gap-4"
   >
     <template #extra>
       <Space wrap>
-        <Button v-if="activity && activity.performanceScope !== 'none'" @click="router.push(`/activities/${id}/orders`)">订单管理</Button>
-        <Button v-if="activity && activity.performanceScope !== 'none'" @click="promotionOpen = true">活动推广</Button>
-        <ActivityActions v-if="activity" :activity="activity" @changed="load" />
-        <Button v-if="activity?.canEdit" @click="editOpen = true">
+        <Button
+          v-if="activity && activity.performanceScope !== 'none'"
+          @click="performanceOpen = true"
+        >
+          业绩排行
+        </Button>
+        <Button
+          v-if="activity && activity.performanceScope !== 'none'"
+          @click="router.push(`/activities/${id}/registrations`)"
+        >
+          报名记录
+        </Button>
+        <Button
+          v-if="
+            activity &&
+            activity.performanceScope !== 'none' &&
+            activity.storedStatus === 'published'
+          "
+          @click="promotionOpen = true"
+        >
+          分享活动
+        </Button>
+        <ActivityActions
+          v-if="activity && !editOpen"
+          :activity="activity"
+          @changed="load"
+        />
+        <Button v-if="activity?.canEdit && !editOpen" @click="editOpen = true">
           编辑活动
+        </Button>
+        <Button
+          v-if="activity?.canEdit && !editOpen"
+          @click="previewOpen = true"
+        >
+          预览
+        </Button>
+        <Button
+          v-if="activity?.canEdit"
+          @click="
+            router.push({
+              path: '/activities',
+              query: { copyFrom: id, create: '1' },
+            })
+          "
+        >
+          复制创建
         </Button>
         <Button
           v-if="
@@ -193,6 +275,13 @@ onMounted(load);
           @click="openApply"
         >
           申请加入
+        </Button>
+        <Button
+          v-if="activity?.canJoin"
+          :loading="applying"
+          @click="joinAsCompanyAdmin"
+        >
+          加入活动
         </Button>
         <Button :loading="loading" @click="load">刷新</Button>
       </Space>
@@ -217,33 +306,34 @@ onMounted(load);
           message="审核已通过，点击发布后活动才会对外展示。"
         />
         <Card>
-          <Descriptions :column="{ xs: 1, sm: 2, lg: 3 }">
+          <ActivityEditor
+            v-if="editOpen && activity.canEdit"
+            inline
+            :open="editOpen"
+            :activity-id="id"
+            @close="finishEditing"
+            @saved="saved"
+          />
+          <Descriptions v-else :column="{ xs: 1, sm: 2, lg: 3 }">
             <DescriptionsItem label="活动状态">
               <Tag :color="activityStatusColor(activity.status)">
                 {{ activityStatusLabel(activity.status) }}
               </Tag>
             </DescriptionsItem>
-            <DescriptionsItem label="提交审核时间">
-{{
-              activity.submittedAt
-                ? new Date(activity.submittedAt).toLocaleString()
-                : '—'
-            }}
-</DescriptionsItem>
-            <DescriptionsItem label="平台审核时间">
-{{
-              activity.reviewedAt
-                ? new Date(activity.reviewedAt).toLocaleString()
-                : '—'
-            }}
-</DescriptionsItem>
-            <DescriptionsItem label="发布时间">
-{{
-              activity.publishedAt
-                ? new Date(activity.publishedAt).toLocaleString()
-                : '—'
-            }}
-</DescriptionsItem>
+            <DescriptionsItem label="开始时间">
+              {{
+                activity.startsAt
+                  ? new Date(activity.startsAt).toLocaleString()
+                  : '未设置'
+              }}
+            </DescriptionsItem>
+            <DescriptionsItem label="结束时间">
+              {{
+                activity.endsAt
+                  ? new Date(activity.endsAt).toLocaleString()
+                  : '未设置'
+              }}
+            </DescriptionsItem>
             <DescriptionsItem
               v-if="activity.performanceScope !== 'none'"
               label="活动主题"
@@ -254,7 +344,12 @@ onMounted(load);
                   class="border-border inline-block size-3 rounded-full border"
                   :style="{ backgroundColor: activity.themeColor }"
                 ></span>
-                {{ activity.themeColor !== activityThemePreset(activity.theme).color ? '（自定义）' : '' }}
+                {{
+                  activity.themeColor !==
+                  activityThemePreset(activity.theme).color
+                    ? '（自定义）'
+                    : ''
+                }}
               </Space>
             </DescriptionsItem>
             <DescriptionsItem label="玩法">
@@ -327,7 +422,51 @@ onMounted(load);
                   : '本组'
               }}
             </DescriptionsItem>
+            <DescriptionsItem
+              v-if="activity.performanceScope !== 'none'"
+              label="活动规则"
+              :span="3"
+            >
+              <p class="max-h-48 overflow-auto whitespace-pre-wrap">
+                {{ activity.rulesText || '未填写' }}
+              </p>
+            </DescriptionsItem>
+            <DescriptionsItem
+              v-if="activity.canEdit"
+              label="报名表单"
+              :span="3"
+            >
+              {{
+                activity.formConfig.fields
+                  .map((field) => field.label)
+                  .join('、')
+              }}
+            </DescriptionsItem>
           </Descriptions>
+          <details v-if="!editOpen" class="mt-4 text-sm text-muted-foreground">
+            <summary class="cursor-pointer">审核与发布时间</summary>
+            <p class="mt-2">
+              提交审核：{{
+                activity.submittedAt
+                  ? new Date(activity.submittedAt).toLocaleString()
+                  : '尚未提交'
+              }}
+            </p>
+            <p>
+              平台审核：{{
+                activity.reviewedAt
+                  ? new Date(activity.reviewedAt).toLocaleString()
+                  : '尚未审核'
+              }}
+            </p>
+            <p>
+              发布：{{
+                activity.publishedAt
+                  ? new Date(activity.publishedAt).toLocaleString()
+                  : '尚未发布'
+              }}
+            </p>
+          </details>
         </Card>
         <Alert
           v-if="membership?.status === 'pending'"
@@ -341,22 +480,19 @@ onMounted(load);
           type="warning"
           :message="`申请已驳回：${membership.reviewRemark || '请联系管理员'}`"
         />
-        <Card v-if="activity.performanceScope !== 'none'" class="mt-4">
-          <Tabs>
-            <TabPane key="employees" tab="活动员工与申请">
-              <ActivityMembers
-                :activity="activity"
-                :my-group-id="membership?.groupId"
-                @changed="load"
-              />
-            </TabPane>
-            <TabPane key="stores" tab="参与门店">
-              <ActivityStores :activity="activity" @changed="load" />
-            </TabPane>
-            <TabPane key="groups" tab="员工分组">
-              <ActivityGroups :activity="activity" @changed="load" />
-            </TabPane>
-          </Tabs>
+        <Card
+          v-if="activity.performanceScope !== 'none' && !editOpen"
+          class="mt-4"
+          title="活动人员"
+        >
+          <ActivityMembers
+            :activity="activity"
+            :my-group-id="membership?.groupId"
+            :initial-status="
+              route.query?.status === 'pending' ? 'pending' : undefined
+            "
+            @changed="load"
+          />
         </Card>
       </template>
     </Spin>
@@ -364,13 +500,14 @@ onMounted(load);
       v-if="activity && activity.performanceScope !== 'none'"
       :open="promotionOpen"
       :activity="activity"
+      :sales-id="!auth.profile?.isPlatformAdmin && !activity.canJoin ? userStore.userInfo?.userId : undefined"
       @close="promotionOpen = false"
     />
-    <ActivityEditor
-      :open="editOpen"
+    <ActivityPreview
+      v-if="activity?.canEdit"
+      :open="previewOpen"
       :activity-id="id"
-      @close="editOpen = false"
-      @saved="load"
+      @close="previewOpen = false"
     />
     <Modal
       :open="applyOpen"
@@ -380,21 +517,7 @@ onMounted(load);
       @cancel="applyOpen = false"
     >
       <Form layout="vertical">
-        <FormItem label="申请角色">
-          <Select
-            v-model:value="form.role"
-            :options="[
-              { label: '组员', value: 'member' },
-              { label: '组长', value: 'leader' },
-              { label: '活动管理员', value: 'admin' },
-            ]"
-          />
-        </FormItem>
-        <FormItem
-          v-if="form.role !== 'admin'"
-          label="所属小组"
-          :required="form.role === 'leader'"
-        >
+        <FormItem label="所属小组">
           <Select
             :value="form.groupId || undefined"
             @update:value="
@@ -405,10 +528,7 @@ onMounted(load);
             @clear="form.groupId = null"
           />
         </FormItem>
-        <Alert
-          type="info"
-          message="申请角色须经审核后生效，审核人可调整批准的角色和小组。"
-        />
+        <Alert type="info" message="申请经公司管理员审核通过后加入活动。" />
       </Form>
     </Modal>
     <Modal
@@ -418,7 +538,7 @@ onMounted(load);
       @cancel="invitationOpen = false"
     >
       <p class="mb-3">
-        将链接发给员工，填写资料并申请角色，审核通过后加入活动。
+        将链接发给员工，填写资料并提交申请，审核通过后加入活动。
       </p>
       <img
         v-if="qrDataUrl"
@@ -444,5 +564,21 @@ onMounted(load);
         </Button>
       </Space>
     </Modal>
+    <Drawer
+      v-if="performanceOpen && activity"
+      v-model:open="performanceOpen"
+      title="活动业绩排行"
+      :width="1240"
+      destroy-on-close
+      root-class-name="performance-ranking-drawer"
+    >
+      <PerformancePanel :activity-id="id" />
+    </Drawer>
   </Page>
 </template>
+
+<style>
+.performance-ranking-drawer .ant-drawer-content-wrapper {
+  max-width: 100vw;
+}
+</style>

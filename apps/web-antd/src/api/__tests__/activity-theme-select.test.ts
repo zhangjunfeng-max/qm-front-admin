@@ -70,3 +70,19 @@ it('preserves an edited custom color and allows recoloring only after opening cu
   await nextTick();
   expect(state.themeColor.value).toBe('#DB7296');
 });
+
+it('selects every additional scene preset with its complete named palette', async () => {
+ const state = mount();
+ for (const [label, theme, color] of [
+  ['暖阳橘', 'sunset', '#EA580C'], ['梦幻紫', 'violet', '#8B5CF6'],
+  ['湖光青', 'teal', '#0D9488'], ['香槟金', 'gold', '#B88746'],
+  ['商务蓝', 'navy', '#315C99'], ['摩卡棕', 'coffee', '#8B5E3C'],
+  ['玫瑰红', 'rose', '#C73E67'], ['活力青柠', 'lime', '#729B24'],
+ ]) {
+  button(label!).click();
+  await nextTick();
+  expect(state.selected.value).toBe(theme);
+  expect(state.themeColor.value).toBe(color);
+  expect(button(label!).getAttribute('aria-pressed')).toBe('true');
+ }
+});

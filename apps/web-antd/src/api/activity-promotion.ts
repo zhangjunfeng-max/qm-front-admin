@@ -1,6 +1,6 @@
 import { requestClient } from './request';
 
-export function buildActivityH5Url(base: string, activityId: string): string {
+export function buildActivityH5Url(base: string, code: string): string {
   const url = new URL(base);
   if (
     !['http:', 'https:'].includes(url.protocol) ||
@@ -8,12 +8,13 @@ export function buildActivityH5Url(base: string, activityId: string): string {
     url.password ||
     base.includes('?') ||
     base.includes('#') ||
-    !/^[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}$/i.test(activityId)
+    !/^[A-Za-z0-9_-]{16}$/.test(code)
   ) {
     throw new Error('活动链接暂不可用，请联系管理员');
   }
   if (!url.pathname.endsWith('/')) url.pathname += '/';
-  url.hash = `/pages/index/index?id=${activityId}`;
+  url.searchParams.set('c',code);
+  url.hash = "";
   return url.href;
 }
 
@@ -26,9 +27,12 @@ export function promotionImageExtension(dataUrl: string): 'jpg' | 'png' | null {
   return match[1] === 'png' ? 'png' : 'jpg';
 }
 
-export const generateActivityMiniappCode = (id: string, signal: AbortSignal) =>
+export const generateActivityMiniappCode = (id: string, signal: AbortSignal, salesId?: string) =>
   requestClient.post<{ dataUrl: string }>(
     `/admin/activities/${id}/miniapp-code`,
-    undefined,
+    salesId ? {salesId} : undefined,
     { signal },
   );
+
+export const generateActivityEntry = (id: string, signal: AbortSignal, salesId?: string) =>
+  requestClient.post<{ code: string }>(`/admin/activities/${id}/entry`, salesId ? {salesId} : undefined, { signal });

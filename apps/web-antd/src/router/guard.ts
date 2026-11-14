@@ -11,6 +11,7 @@ import { accessRoutes, coreRouteNames } from '#/router/routes';
 import { useAuthStore } from '#/store';
 
 import { generateAccess } from './access';
+import { mobileDestination, prefersDesktop } from './mobile-navigation';
 
 /**
  * 通用守卫配置
@@ -79,6 +80,7 @@ function setupAccessGuard(router: Router) {
       if (to.fullPath !== LOGIN_PATH) {
         return {
           path: LOGIN_PATH,
+          query:{redirect:to.fullPath},
           replace: true,
         };
       }
@@ -87,6 +89,22 @@ function setupAccessGuard(router: Router) {
 
     // 是否已经生成过动态路由
     if (accessStore.isAccessChecked) {
+      const destination = mobileDestination(
+        to.path,
+        window.innerWidth,
+        authStore.profile?.isPlatformAdmin ?? false,
+        prefersDesktop(),
+        to.query,
+        userStore.userInfo?.roles?.includes('admin') ?? false,
+      );
+      if (destination) {
+        const resolved = router.resolve(destination);
+        return {
+          path: resolved.path,
+          query: { ...to.query, ...resolved.query },
+          replace: true,
+        };
+      }
       const homePath = userStore.userInfo?.homePath;
       if (to.path === '/home' && homePath && homePath !== '/home')
         return homePath;

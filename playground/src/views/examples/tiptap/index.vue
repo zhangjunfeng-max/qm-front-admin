@@ -34,7 +34,7 @@ const imageUpload: ImageUploadOptions = {
         if (progress >= 100) {
           // 上传完成后返回 mock URL
           resolve(
-            `https://picsum.photos/seed/${Date.now()}/640/${Math.round((640 * ((file.size % 3) + 2)) / 4)}`,
+            `data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22800%22%20height%3D%22600%22%20viewBox%3D%220%200%20800%20600%22%3E%3Crect%20width%3D%22800%22%20height%3D%22600%22%20fill%3D%22%23dbeafe%22%2F%3E%3Ccircle%20cx%3D%22580%22%20cy%3D%22170%22%20r%3D%2290%22%20fill%3D%22%23fbbf24%22%2F%3E%3Cpath%20d%3D%22M0%20600V460L220%20260l220%20220%20160-140%20200%20190v70%22%20fill%3D%22%2393c5fd%22%2F%3E%3C%2Fsvg%3E`,
           );
         }
       }, 300);

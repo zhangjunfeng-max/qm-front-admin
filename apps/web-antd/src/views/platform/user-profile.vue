@@ -55,7 +55,7 @@ const creating = computed(() => !props.userId);
 const self = computed(
   () => !!props.userId && props.userId === auth.profile?.id,
 );
-const roleNames = { owner: '公司所有者', admin: '公司管理员', member: '员工' };
+const roleNames = { admin: '公司管理员', member: '员工' };
 const companyColumns = [
   { title: '公司名称', dataIndex: 'name', ellipsis: true },
   { title: '员工姓名', dataIndex: 'employeeName', ellipsis: true },

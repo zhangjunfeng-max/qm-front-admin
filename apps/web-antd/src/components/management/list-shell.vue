@@ -66,6 +66,7 @@ const emit = defineEmits<{
           :page-size="pageSize"
           :total="total"
           show-size-changer
+          responsive
           :show-total="(n: number) => `共 ${n} 条`"
           @change="(p: number, s: number) => emit('change', p, s)"
         />
@@ -99,5 +100,16 @@ const emit = defineEmits<{
 
 .management-filters :deep(.ant-select) {
   min-width: 144px;
+}
+
+@media (max-width: 767px) {
+  .management-filters :deep(.ant-input-search) {
+    width: 100%;
+  }
+
+  .management-filters :deep(.ant-select) {
+    flex: 1 1 140px;
+    max-width: 100%;
+  }
 }
 </style>

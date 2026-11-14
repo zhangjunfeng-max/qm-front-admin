@@ -55,7 +55,7 @@ export function defaultActivity(): ActivityInput {
     shareImageUrl: '',
     forwardText: '',
     forwardImageUrl: '',
-    musicUrl: '',
+    musicId: null,
     virtualViewCount: 0,
     virtualRegistrationCount: 0,
     employeeScope: 'all',
@@ -64,6 +64,7 @@ export function defaultActivity(): ActivityInput {
     leaderPerformanceScope: 'group',
     channel: 'h5',
     miniappId: null,
+    paymentAccountId: null,
   };
 }
 export function createActivityInput(value: ActivityInput): ActivityInput {

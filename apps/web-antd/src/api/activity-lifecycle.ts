@@ -70,6 +70,9 @@ export function getPlatformActivity(id: string, signal?: AbortSignal) {
     signal,
   });
 }
+export function updatePlatformActivitySchedule(id: string, data: { version: number; startsAt: string; endsAt: string }) {
+  return requestClient.put<PlatformActivity>(`/platform/activities/${id}/schedule`, data);
+}
 export async function reviewActivity(
   id: string,
   version: number,

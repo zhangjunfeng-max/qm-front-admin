@@ -7,14 +7,14 @@ import {
   promotionImageExtension,
 } from '../activity-promotion';
 
-const id = '12345678-1234-1234-1234-123456789abc';
+const id = 'AbCdEfGh1234_-56';
 describe('activity promotion links', () => {
   it('preserves the deployment subpath and routes to the activity without employee attribution', () => {
     expect(buildActivityH5Url('https://example.com/campaign', id)).toBe(
-      'https://example.com/campaign/#/pages/index/index?id=12345678-1234-1234-1234-123456789abc',
+      'https://example.com/campaign/?c=AbCdEfGh1234_-56',
     );
     expect(buildActivityH5Url('http://localhost:5173/', id)).toBe(
-      'http://localhost:5173/#/pages/index/index?id=12345678-1234-1234-1234-123456789abc',
+      'http://localhost:5173/?c=AbCdEfGh1234_-56',
     );
   });
   it.each([

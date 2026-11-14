@@ -38,6 +38,9 @@ let cleanup: (() => void) | undefined;
 function record(id = 'a'): PlatformActivity {
   return {
     ...defaultActivity(),
+    musicUrl: '',
+    musicName: '',
+    musicStatus: '',
     id,
     name: `活动${id}`,
     companyName: '测试公司',
@@ -55,7 +58,10 @@ function record(id = 'a'): PlatformActivity {
     canPublish: false,
     canArchive: false,
     canRestore: false,
+    canJoin: false,
     canEdit: false,
+    canEditCore: false,
+    canEditSchedule: true,
     canManageMembers: false,
     canManageGroups: false,
     canReviewApplications: false,
@@ -160,11 +166,51 @@ it('ignores a delayed detail result after closing and reopening the drawer', asy
   expect(document.body.textContent).not.toContain('旧的审核内容');
 });
 
-
 it('opens the activity selected by a notification using the platform detail API', async () => {
   api.query = { activityId: 'notification-activity' };
-  api.detail.mockResolvedValueOnce({ ...record('notification-activity'), name: '通知中的活动' });
+  api.detail.mockResolvedValueOnce({
+    ...record('notification-activity'),
+    name: '通知中的活动',
+  });
   mount();
-  await vi.waitFor(() => expect(api.detail).toHaveBeenCalledWith('notification-activity', expect.any(AbortSignal)));
-  await vi.waitFor(() => expect(document.body.textContent).toContain('通知中的活动'));
+  await vi.waitFor(() =>
+    expect(api.detail).toHaveBeenCalledWith(
+      'notification-activity',
+      expect.any(AbortSignal),
+    ),
+  );
+  await vi.waitFor(() =>
+    expect(document.body.textContent).toContain('通知中的活动'),
+  );
+});
+
+it('opens the next pending activity in the same keyword queue without reviewing it', async () => {
+  let onOk: (() => Promise<void>) | undefined;
+  vi.spyOn(Modal, 'confirm').mockImplementation((config) => {
+    onOk = config.onOk as () => Promise<void>;
+    return { destroy: vi.fn(), update: vi.fn() };
+  });
+  api.list.mockResolvedValue({
+    items: [record('a'), record('b')],
+    total: 2,
+    page: 1,
+    pageSize: 20,
+  });
+  api.detail.mockImplementation(async (id) => record(id));
+  mount();
+  await vi.waitFor(() => expect(document.body.textContent).toContain('活动a'));
+  [...document.querySelectorAll('button')]
+    .find((item) => item.textContent?.trim() === '审核')!
+    .click();
+  await vi.waitFor(() =>
+    expect(document.querySelector('#activity-review-reason')).not.toBeNull(),
+  );
+  button('审核通过').click();
+  await onOk?.();
+  await vi.waitFor(() =>
+    expect(api.detail).toHaveBeenLastCalledWith('b', expect.any(AbortSignal)),
+  );
+  expect(api.review).toHaveBeenCalledTimes(1);
+  expect(api.review).toHaveBeenCalledWith('a', 4, 'approved', '');
+  expect(document.querySelector('#activity-review-reason')).not.toBeNull();
 });

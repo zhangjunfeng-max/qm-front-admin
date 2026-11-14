@@ -13,7 +13,6 @@ const props = defineProps<{
 const emit = defineEmits<{ select: [id: string] }>();
 const keyword = ref('');
 const roles = {
-  owner: '所有者',
   admin: '管理员',
   member: '成员',
   platform_admin: '平台管理员',

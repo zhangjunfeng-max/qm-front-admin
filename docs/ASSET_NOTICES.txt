@@ -1,0 +1,32 @@
+APPLICATION ASSET SOURCES
+
+Project-created defaults: participant silhouettes (CSS only), platform geometric
+logo/favicon/status illustrations and regenerated geometric test posters. No
+stock human photography, external cartoon characters, portrait API or external
+artwork is used for these defaults. Asset construction is recorded in the
+backend scripts/replace-demo-assets.py; the application's grant is not extended
+to customer uploads.
+
+The mobile activity-demo.m4a is an original synthesized 19.2-second demonstration
+melody made from sine-wave harmonics without sampled recordings. It is used as
+a development fallback only; production activities play their configured music.
+Preview MP4 clips are synthetic development fixtures, not third-party footage.
+
+Vben Admin: MIT, Copyright (c) 2020-present, Vben. Root LICENSE is retained and
+included in THIRD_PARTY_NOTICES. Modifications in this application retain this
+notice; removing template branding is not removal of its license obligations.
+
+Iconify renderer is MIT. Individual icon collections retain their own grants,
+see ICON_NOTICES.txt reproduced in the distribution notices. Local service
+brand marks (e.g. WeChat) identify the corresponding integration only; software
+licenses do not grant trademark rights or imply sponsorship.
+
+Official WeChat JS-SDK is loaded from
+https://res.wx.qq.com/open/js/jweixin-1.6.0.js under the applicable WeChat
+Open Platform/Official Accounts developer agreements. It is not relabeled MIT
+or repackaged as project-owned software.
+
+Customer-uploaded posters, avatars, videos, music and copy remain customer
+content. Their copyrights, music synchronization/public-performance rights,
+portrait consent and trademark rights cannot be established by scanning code.
+No uploaded content is deleted or relicensed by this maintenance change.

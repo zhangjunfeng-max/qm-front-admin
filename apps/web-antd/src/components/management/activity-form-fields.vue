@@ -2,6 +2,7 @@
 import type { FormField } from '#/api/management';
 
 import { Button, Card, Input, Select, Space, Switch } from 'ant-design-vue';
+const props = withDefaults(defineProps<{ disabled?: boolean }>(), { disabled: false });
 const fields = defineModel<FormField[]>({ required: true });
 const types = [
   { label: '单行文本', value: 'text' },
@@ -18,9 +19,11 @@ function key() {
   return Date.now().toString(36) + Math.random().toString(36).slice(2);
 }
 function addOption(field: FormField) {
+  if (props.disabled) return;
   (field.options ||= []).push({ value: `option_${key()}`, label: '' });
 }
 function add() {
+  if (props.disabled) return;
   fields.value.push({
     key: `field_${key()}`,
     type: 'text',
@@ -30,12 +33,14 @@ function add() {
   });
 }
 function move(index: number, delta: number) {
+  if (props.disabled) return;
   const next = index + delta;
   if (index < 2 || next < 2 || next >= fields.value.length) return;
   const [item] = fields.value.splice(index, 1);
   if (item) fields.value.splice(next, 0, item);
 }
 function drop(index: number) {
+  if (props.disabled) return;
   if (dragging >= 2 && index >= 2 && dragging !== index) {
     const [item] = fields.value.splice(dragging, 1);
     if (item) fields.value.splice(index, 0, item);
@@ -48,12 +53,12 @@ function changeType(field: FormField) {
 }
 </script>
 <template>
-  <div class="space-y-3">
+  <fieldset class="space-y-3" :disabled="disabled" style="min-width: 0">
     <Card
       v-for="(field, index) in fields"
       :key="field.key"
       size="small"
-      :draggable="index >= 2"
+      :draggable="!disabled && index >= 2"
       @dragstart="dragging = index"
       @dragover.prevent
       @drop.prevent="drop(index)"
@@ -61,22 +66,24 @@ function changeType(field: FormField) {
       <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <Input
           v-model:value="field.label"
+          :disabled="disabled"
           placeholder="字段标题"
           :maxlength="80"
         />
         <Select
           v-model:value="field.type"
           :options="types"
-          :disabled="index < 2"
+          :disabled="disabled || index < 2"
           @change="changeType(field)"
         />
         <Input
           v-model:value="field.placeholder"
+          :disabled="disabled"
           placeholder="填写提示"
           :maxlength="200"
         />
         <Space>
-          <Switch v-model:checked="field.required" :disabled="index < 2" />
+          <Switch v-model:checked="field.required" :disabled="disabled || index < 2" />
           必填
           <span v-if="index < 2" class="text-xs text-muted-foreground">
             固定字段
@@ -94,29 +101,30 @@ function changeType(field: FormField) {
         >
           <Input
             v-model:value="option.label"
+            :disabled="disabled"
             placeholder="选项名称"
             :maxlength="80"
           />
-          <Button danger @click="field.options?.splice(oi, 1)">删除</Button>
+          <Button danger :disabled="disabled" @click="field.options?.splice(oi, 1)">删除</Button>
         </div>
-        <Button @click="addOption(field)">添加选项</Button>
+        <Button :disabled="disabled" @click="addOption(field)">添加选项</Button>
       </div>
       <Space v-if="index >= 2" class="mt-3">
-        <Button size="small" :disabled="index === 2" @click="move(index, -1)">
+        <Button size="small" :disabled="disabled || index === 2" @click="move(index, -1)">
           上移
         </Button>
         <Button
           size="small"
-          :disabled="index === fields.length - 1"
+          :disabled="disabled || index === fields.length - 1"
           @click="move(index, 1)"
         >
           下移
         </Button>
-        <Button size="small" danger @click="fields.splice(index, 1)">
+        <Button size="small" danger :disabled="disabled" @click="fields.splice(index, 1)">
           删除字段
         </Button>
       </Space>
     </Card>
-    <Button block type="dashed" @click="add">添加字段</Button>
-  </div>
+    <Button block type="dashed" :disabled="disabled" @click="add">添加字段</Button>
+  </fieldset>
 </template>

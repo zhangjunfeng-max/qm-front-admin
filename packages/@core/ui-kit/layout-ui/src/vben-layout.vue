@@ -564,6 +564,12 @@ function handleClickMask() {
   activeSidebarCollapse.value = true;
 }
 
+defineExpose({
+  closeMobileSidebar() {
+    mobileSidebarOpen.value = false;
+  },
+});
+
 function handleHeaderToggle() {
   if (props.isMobile) {
     activeSidebarCollapse.value = false;

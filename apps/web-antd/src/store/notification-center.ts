@@ -160,7 +160,8 @@ export function createNotificationCenter(api: typeof notificationApi) {
     try {
       const result = await open(id);
       if (!result || version !== contextVersion.value) return;
-      if (result.link) await navigate(result.link);
+      if (result.kind === 'activity_changed') selected.value = result;
+      else if (result.link) await navigate(result.link);
       else selected.value = result;
     } finally {
       if (version === contextVersion.value) openingId.value = '';

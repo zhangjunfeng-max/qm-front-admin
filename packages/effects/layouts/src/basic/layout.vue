@@ -3,7 +3,7 @@ import type { SetupContext } from 'vue';
 
 import type { MenuRecordRaw } from '@vben/types';
 
-import { computed, useSlots, watch } from 'vue';
+import { computed, useSlots, useTemplateRef, watch } from 'vue';
 
 import { useRefresh } from '@vben/hooks';
 import { $t, i18n } from '@vben/locales';
@@ -49,6 +49,9 @@ const emit = defineEmits<{
   clickLogo: [];
   logout: [];
 }>();
+
+const layoutRef =
+  useTemplateRef<InstanceType<typeof VbenAdminLayout>>('layoutRef');
 
 interface Props {
   /** 自定义 Logo 图片地址，不传则使用偏好设置默认值 */
@@ -165,7 +168,7 @@ const sidebarExtraTitleHeight = computed<number | undefined>(() => {
 });
 
 const {
-  handleMenuSelect,
+  handleMenuSelect: navigateMenu,
   handleMenuOpen,
   headerActive,
   headerMenus,
@@ -174,6 +177,11 @@ const {
   mixHeaderMenus,
   sidebarVisible,
 } = useMixedMenu();
+
+function handleMenuSelect(key: string, mode?: string) {
+  navigateMenu(key, mode);
+  if (isMobile.value) layoutRef.value?.closeMobileSidebar();
+}
 
 // 侧边多列菜单
 const {
@@ -256,6 +264,7 @@ const headerSlots = computed(() => {
 
 <template>
   <VbenAdminLayout
+    ref="layoutRef"
     v-model:sidebar-extra-visible="sidebarExtraVisible"
     :content-compact="preferences.app.contentCompact"
     :content-compact-width="preferences.app.contentCompactWidth"
@@ -264,7 +273,7 @@ const headerSlots = computed(() => {
     :content-padding-left="preferences.app.contentPaddingLeft"
     :content-padding-right="preferences.app.contentPaddingRight"
     :content-padding-top="preferences.app.contentPaddingTop"
-    :footer-enable="preferences.footer.enable"
+    :footer-enable="!!$slots.footer || preferences.footer.enable"
     :footer-fixed="preferences.footer.fixed"
     :footer-height="preferences.footer.height"
     :header-height="preferences.header.height"
@@ -321,7 +330,7 @@ const headerSlots = computed(() => {
         v-if="preferences.logo.enable"
         :fit="preferences.logo.fit"
         :class="logoClass"
-        :collapsed="logoCollapsed"
+        :collapsed="isMobile || logoCollapsed"
         :src="finalLogoSrc"
         :src-dark="finalLogoSrcDark"
         :text="finalLogoText"
@@ -446,12 +455,14 @@ const headerSlots = computed(() => {
     </template>
 
     <!-- 页脚 -->
-    <template v-if="preferences.footer.enable" #footer>
+    <template v-if="$slots.footer || preferences.footer.enable" #footer>
       <LayoutFooter>
-        <Copyright
-          v-if="preferences.copyright.enable"
-          v-bind="preferences.copyright"
-        />
+        <slot name="footer">
+          <Copyright
+            v-if="preferences.copyright.enable"
+            v-bind="preferences.copyright"
+          />
+        </slot>
       </LayoutFooter>
     </template>
 

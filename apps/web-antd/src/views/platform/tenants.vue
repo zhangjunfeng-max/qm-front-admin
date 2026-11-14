@@ -4,6 +4,7 @@ import type { TableColumnsType } from 'ant-design-vue';
 import type { PlatformApi } from '#/api/platform';
 
 import { computed, onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
 
 import { Page } from '@vben/common-ui';
 
@@ -20,7 +21,10 @@ import {
   Tag,
 } from 'ant-design-vue';
 
-import { getPlatformTenantsApi } from '#/api/platform';
+import {
+  getPlatformPaymentAccountsApi,
+  getPlatformTenantsApi,
+} from '#/api/platform';
 
 import TenantCreate from './tenant-create.vue';
 import TenantProfile from './tenant-profile.vue';
@@ -39,6 +43,8 @@ let requestVersion = 0;
 const profileOpen = ref(false);
 const profileId = ref('');
 const profileEditing = ref(false);
+const router = useRouter();
+const merchantCounts = ref(new Map<string, number>());
 function openProfile(id: string, editing: boolean) {
   profileId.value = id;
   profileEditing.value = editing;
@@ -84,6 +90,7 @@ const columns: TableColumnsType<PlatformApi.Tenant> = [
     width: 100,
   },
   { title: '状态', dataIndex: 'status', key: 'status', width: 100 },
+  { title: '支付账户', key: 'paymentAccounts', width: 130 },
   {
     title: '服务到期时间',
     dataIndex: 'expiresAt',
@@ -91,7 +98,7 @@ const columns: TableColumnsType<PlatformApi.Tenant> = [
     width: 190,
   },
   { title: '创建时间', dataIndex: 'createdAt', key: 'createdAt', width: 190 },
-  { title: '操作', key: 'actions', width: 120, fixed: 'right' },
+  { title: '操作', key: 'actions', width: 180, fixed: 'right' },
 ];
 const pagination = computed(() => ({
   current: page.value,
@@ -107,15 +114,25 @@ async function load() {
   items.value = [];
   total.value = 0;
   try {
-    const result = await getPlatformTenantsApi({
-      page: page.value,
-      pageSize: pageSize.value,
-      keyword: appliedKeyword.value || undefined,
-      status: status.value,
-    });
+    const [result, accounts] = await Promise.all([
+      getPlatformTenantsApi({
+        page: page.value,
+        pageSize: pageSize.value,
+        keyword: appliedKeyword.value || undefined,
+        status: status.value,
+      }),
+      getPlatformPaymentAccountsApi({ page: 1, pageSize: 100 }),
+    ]);
     if (version !== requestVersion) return;
     items.value = result.items;
     total.value = result.total;
+    const next = new Map<string, number>();
+    for (const account of accounts.items) {
+      for (const binding of account.bindings) {
+        next.set(binding.tenantId, (next.get(binding.tenantId) || 0) + 1);
+      }
+    }
+    merchantCounts.value = next;
   } catch {
     if (version === requestVersion) failed.value = true;
   } finally {
@@ -168,13 +185,13 @@ onMounted(load);
         minHeight: 0,
       }"
     >
-      <Space class="mb-4 flex shrink-0 flex-wrap" :size="12">
+      <div class="mb-4 flex shrink-0 flex-wrap gap-3">
         <InputSearch
           v-model:value="keyword"
           placeholder="搜索公司名称"
           :maxlength="80"
           allow-clear
-          class="w-72"
+          class="w-full sm:w-72"
           @search="search"
         />
         <Select
@@ -188,7 +205,7 @@ onMounted(load);
           ]"
           @change="search"
         />
-      </Space>
+      </div>
       <div ref="tableRegion" class="min-h-0 flex-1 overflow-auto">
         <Table
           :columns="columns"
@@ -215,6 +232,18 @@ onMounted(load);
               >
                 编辑
               </Button>
+              <Button
+                type="link"
+                size="small"
+                @click="
+                  router.push({
+                    path: '/platform/payments',
+                    query: { tenantId: record.id },
+                  })
+                "
+              >
+                支付配置
+              </Button>
             </Space>
             <template
               v-else-if="
@@ -236,6 +265,16 @@ onMounted(load);
               <Tag v-if="expired(record.expiresAt)" color="error">已到期</Tag>
             </template>
             <Tag
+              v-else-if="column.key === 'paymentAccounts'"
+              :color="merchantCounts.get(record.id) ? 'success' : 'warning'"
+            >
+              {{
+                merchantCounts.get(record.id)
+                  ? `已绑定 ${merchantCounts.get(record.id)} 个`
+                  : '未绑定'
+              }}
+            </Tag>
+            <Tag
               v-else-if="column.key === 'status'"
               :color="record.status === 'active' ? 'success' : 'default'"
             >
@@ -249,7 +288,7 @@ onMounted(load);
         </Table>
       </div>
       <div class="mt-4 flex shrink-0 justify-end border-t border-border pt-4">
-        <Pagination v-bind="pagination" @change="changePage" />
+        <Pagination v-bind="pagination" responsive @change="changePage" />
       </div>
     </Card>
     <TenantCreate

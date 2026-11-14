@@ -22,9 +22,9 @@ const emit = defineEmits<{ close: []; saved: [] }>();
 const saving = ref(false);
 const defaults = (): TenantCreate => ({
   name: '',
-  ownerPhone: '',
-  ownerName: '',
-  ownerPassword: '',
+  adminPhone: '',
+  adminName: '',
+  adminPassword: '',
   contactName: '',
   contactPhone: '',
   industry: '',
@@ -44,17 +44,17 @@ async function save() {
   if (saving.value) return;
   if (
     !form.name.trim() ||
-    !form.ownerName.trim() ||
-    !/^1[3-9]\d{9}$/.test(form.ownerPhone)
+    !form.adminName.trim() ||
+    !/^1[3-9]\d{9}$/.test(form.adminPhone)
   ) {
-    message.warning('请填写公司名称、所有者姓名和有效手机号');
+    message.warning('请填写公司名称、管理员姓名和有效手机号');
     return;
   }
   saving.value = true;
   try {
     await createPlatformTenantApi({
       ...form,
-      ownerPassword: form.ownerPassword || undefined,
+      adminPassword: form.adminPassword || undefined,
     });
     message.success('公司已创建');
     emit('saved');
@@ -78,16 +78,16 @@ async function save() {
         <Input v-model:value="form.name" :maxlength="160" />
       </FormItem>
       <div class="grid grid-cols-1 gap-x-4 sm:grid-cols-2">
-        <FormItem label="所有者姓名" required>
-          <Input v-model:value="form.ownerName" :maxlength="120" />
+        <FormItem label="管理员姓名" required>
+          <Input v-model:value="form.adminName" :maxlength="120" />
         </FormItem>
-        <FormItem label="所有者手机号" required>
-          <Input v-model:value="form.ownerPhone" :maxlength="11" />
+        <FormItem label="管理员手机号" required>
+          <Input v-model:value="form.adminPhone" :maxlength="11" />
         </FormItem>
       </div>
-      <FormItem label="所有者初始密码">
+      <FormItem label="管理员初始密码">
         <InputPassword
-          v-model:value="form.ownerPassword"
+          v-model:value="form.adminPassword"
           autocomplete="new-password"
         />
         <p class="mt-1 text-xs text-muted-foreground">

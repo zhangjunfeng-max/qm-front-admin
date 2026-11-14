@@ -23,7 +23,7 @@ export interface Employee {
   displayName: string;
   avatarUrl: string;
   remark: string;
-  role: 'admin' | 'member' | 'owner';
+  role: 'admin' | 'member';
   status: 'active' | 'disabled';
   createdAt: string;
   updatedAt: string;
@@ -93,7 +93,7 @@ export const getActivityMiniappOptions = (id: string, params: ListQuery) =>
       : '/admin/activities/miniapp-options',
     { params },
   );
-export type ActivityRole = 'admin' | 'leader' | 'member';
+export type ActivityRole = 'leader' | 'member';
 export interface FormField {
   key: string;
   type:
@@ -116,10 +116,20 @@ export interface ActivityMediaFile {
   size: number;
   originalSize: number;
   contentType: string;
+  width?: number;
+  height?: number;
 }
 export interface ActivityDetailMedia {
   type: 'image' | 'video';
   url: string;
+}
+export interface PaymentAccountOption {
+  id: string;
+  provider: 'aggregate' | 'alipay' | 'wechat';
+  accountName: string;
+  maskedAccount: string;
+  isDefault: boolean;
+  capabilities: string[];
 }
 export interface ActivityInput {
   theme: import('./activity-theme').ActivityTheme;
@@ -142,7 +152,7 @@ export interface ActivityInput {
   shareImageUrl: string;
   forwardText: string;
   forwardImageUrl: string;
-  musicUrl: string;
+  musicId: null | string;
   virtualViewCount: number;
   virtualRegistrationCount: number;
   employeeScope: 'all' | 'selected';
@@ -151,9 +161,16 @@ export interface ActivityInput {
   leaderPerformanceScope: 'all' | 'group';
   channel: 'h5' | 'h5_miniapp';
   miniappId: null | string;
+  paymentAccountId: null | string;
 }
 export interface Activity extends ActivityInput {
+ musicUrl: string;
+ musicName: string;
+ musicStatus: string;
+ summary?: { scope: 'all' | 'group' | 'self'; registrations: number; collectedCent: number; pendingRegistration: number; pendingPayment: number };
+ personal?: {collectedCent:number;registrations:number;paidOrders:number};
   miniapp: MiniappOption | null;
+  paymentAccount?: PaymentAccountOption | null;
   stores: StoreOption[];
   id: string;
   tenantId: string;
@@ -181,12 +198,22 @@ export interface Activity extends ActivityInput {
   memberCount: number;
   groupCount: number;
   currentRole: string;
+  canJoin: boolean;
   canEdit: boolean;
+  canEditCore: boolean;
+  canEditSchedule: boolean;
   canManageMembers: boolean;
   canManageGroups: boolean;
   canReviewApplications: boolean;
   performanceScope: string;
 }
+export const getActivityPaymentAccounts = (
+  params: Pick<ActivityInput, 'channel' | 'miniappId'>,
+) =>
+  requestClient.get<{ items: PaymentAccountOption[] }>(
+    '/admin/activities/payment-accounts',
+    { params },
+  );
 export interface ActivityGroup {
   id: string;
   name: string;
@@ -235,13 +262,19 @@ export const saveEmployee = (id: string, data: EmployeeInput) =>
   id
     ? requestClient.put<Employee>(`/admin/employees/${id}`, data)
     : requestClient.post<Employee>('/admin/employees', data);
-export const getActivities = (params: ListQuery) =>
-  requestClient.get<PageResult<Activity>>('/admin/activities', { params });
-export const getActivity = (id: string) =>
-  requestClient.get<Activity>(`/admin/activities/${id}`);
+export const getActivities = (
+  params: ListQuery & { onlyJoined?: boolean; withPersonal?: boolean; withSummary?: boolean },
+  signal?: AbortSignal,
+) =>
+  requestClient.get<PageResult<Activity>>('/admin/activities', {
+    params,
+    signal,
+  });
+export const getActivity = (id: string, signal?: AbortSignal) =>
+  requestClient.get<Activity>(`/admin/activities/${id}`, { signal });
 export const saveActivity = (
   id: string,
-  data: ActivityInput & { version?: number },
+  data: ActivityInput & { version?: number; employeeIds?: string[] },
 ) =>
   id
     ? requestClient.put<Activity>(`/admin/activities/${id}`, data)
@@ -269,7 +302,7 @@ export const getActivityEmployees = (id: string, params: ListQuery) =>
     params,
   });
 export const getEmployeeOptions = (id: string, params: ListQuery) =>
-  requestClient.get<PageResult<Employee>>(`${base(id)}/employee-options`, {
+  requestClient.get<PageResult<Employee>>(id ? `${base(id)}/employee-options` : '/admin/activities/employee-options', {
     params,
   });
 export const assignActivityEmployee = (

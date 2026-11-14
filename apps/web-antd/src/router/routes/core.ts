@@ -39,6 +39,12 @@ const coreRoutes: RouteRecordRaw[] = [
     children: [],
   },
   {
+    name: 'ActivityEmployeeRegister',
+    path: '/auth/activity-register',
+    component: () => import('#/views/management/activity-register.vue'),
+    meta: { title: '员工加入活动', ignoreAccess: true, hideInTab: true },
+  },
+  {
     component: AuthPageLayout,
     meta: {
       hideInTab: true,
@@ -48,12 +54,6 @@ const coreRoutes: RouteRecordRaw[] = [
     path: '/auth',
     redirect: LOGIN_PATH,
     children: [
-      {
-        name: 'ActivityEmployeeRegister',
-        path: 'activity-register',
-        component: () => import('#/views/management/activity-register.vue'),
-        meta: { title: '员工加入活动', ignoreAccess: true },
-      },
       {
         name: 'Login',
         path: 'login',

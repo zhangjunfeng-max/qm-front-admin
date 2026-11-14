@@ -33,6 +33,7 @@ import {
 } from '#/api/activity-lifecycle';
 import { activityThemePreset } from '#/api/activity-theme';
 import { captureContext } from '#/api/context-lifecycle';
+import ActivitySchedule from '#/components/management/activity-schedule.vue';
 import ListShell from '#/components/management/list-shell.vue';
 
 import { useList } from '../management/use-list';
@@ -138,10 +139,14 @@ function show(row: Pick<PlatformActivity, 'id'>) {
   open.value = true;
   void loadDetail();
 }
-watch(() => route.query.activityId, (id) => {
-  if (typeof id === 'string' && id) show({ id });
-  else close();
-}, { immediate: true });
+watch(
+  () => route.query.activityId,
+  (id) => {
+    if (typeof id === 'string' && id) show({ id });
+    else close();
+  },
+  { immediate: true },
+);
 function close() {
   if (reviewing.value) return;
   open.value = false;
@@ -190,7 +195,39 @@ function review(decision: 'approved' | 'rejected') {
         message.success(
           decision === 'approved' ? '活动审核已通过' : '活动审核未通过',
         );
+        const queue = items.value;
+        const index = queue.findIndex((item) => item.id === current.id);
+        const nextId = [
+          ...queue.slice(index + 1),
+          ...queue.slice(0, Math.max(0, index)),
+        ].find(
+          (item) => item.id !== current.id && item.status === 'pending_review',
+        )?.id;
         await load();
+        context.assertCurrent();
+        if (open.value && selectedId.value === current.id) {
+          let next =
+            nextId ??
+            items.value.find(
+              (item) =>
+                item.id !== current.id && item.status === 'pending_review',
+            )?.id;
+          if (!next && (!status.value || status.value === 'pending_review')) {
+            const pending = await getPlatformActivities({
+              page: 1,
+              pageSize: 1,
+              keyword: keyword.value.trim() || undefined,
+              status: 'pending_review',
+            });
+            context.assertCurrent();
+            next = pending.items.find(
+              (item) =>
+                item.id !== current.id && item.status === 'pending_review',
+            )?.id;
+          }
+          if (next) show({ id: next });
+          else message.info('当前筛选下已无待审核活动');
+        }
       } catch (error) {
         if (!context.signal.aborted) {
           void loadDetail();
@@ -246,26 +283,24 @@ onBeforeUnmount(() => {
         <Tag
           v-if="column.key === 'status'"
           :color="activityStatusColor(record.status)"
-          >
-{{ activityStatusLabel(record.status) }}
-</Tag>
+        >
+          {{ activityStatusLabel(record.status) }}
+        </Tag>
         <template v-else-if="column.key === 'submittedAt'">
-{{
-          date(record.submittedAt)
-        }}
-</template>
+          {{ date(record.submittedAt) }}
+        </template>
         <Button
           v-else-if="column.key === 'actions'"
           type="link"
           size="small"
           @click="show(record as PlatformActivity)"
-          >
-{{ record.status === 'pending_review' ? '审核' : '查看' }}
-</Button>
+        >
+          {{ record.status === 'pending_review' ? '审核' : '查看' }}
+        </Button>
       </template>
       <template #emptyText>
-<Empty description="暂无活动" :image="Empty.PRESENTED_IMAGE_SIMPLE" />
-</template>
+        <Empty description="暂无活动" :image="Empty.PRESENTED_IMAGE_SIMPLE" />
+      </template>
     </Table>
     <template #dialogs>
       <Drawer
@@ -298,15 +333,11 @@ onBeforeUnmount(() => {
             <Card size="small" class="mb-4" title="活动信息">
               <Descriptions :column="{ xs: 1, sm: 2 }">
                 <DescriptionsItem label="活动名称">
-{{
-                  detail.name
-                }}
-</DescriptionsItem>
+                  {{ detail.name }}
+                </DescriptionsItem>
                 <DescriptionsItem label="公司">
-{{
-                  detail.companyName
-                }}
-</DescriptionsItem>
+                  {{ detail.companyName }}
+                </DescriptionsItem>
                 <DescriptionsItem label="状态">
                   <Tag :color="activityStatusColor(detail.status)">
                     {{ activityStatusLabel(detail.status) }}
@@ -319,81 +350,73 @@ onBeforeUnmount(() => {
                       class="border-border inline-block size-3 rounded-full border"
                       :style="{ backgroundColor: detail.themeColor }"
                     ></span>
-                    {{ detail.themeColor !== activityThemePreset(detail.theme).color ? '（自定义）' : '' }}
+                    {{
+                      detail.themeColor !==
+                      activityThemePreset(detail.theme).color
+                        ? '（自定义）'
+                        : ''
+                    }}
                   </Space>
                 </DescriptionsItem>
                 <DescriptionsItem label="活动渠道">
-{{
-                  detail.channel === 'h5' ? 'H5' : 'H5 + 小程序'
-                }}
-</DescriptionsItem>
+                  {{ detail.channel === 'h5' ? 'H5' : 'H5 + 小程序' }}
+                </DescriptionsItem>
                 <DescriptionsItem label="开始时间">
-{{
-                  date(detail.startsAt)
-                }}
-</DescriptionsItem>
+                  {{ date(detail.startsAt) }}
+                </DescriptionsItem>
                 <DescriptionsItem label="结束时间">
-{{
-                  date(detail.endsAt)
-                }}
-</DescriptionsItem>
+                  {{ date(detail.endsAt) }}
+                </DescriptionsItem>
                 <DescriptionsItem label="玩法">
-{{
-                  detail.groupEnabled ? `${detail.groupSize}人拼团` : '营销活动'
-                }}
-</DescriptionsItem>
+                  {{
+                    detail.groupEnabled
+                      ? `${detail.groupSize}人拼团`
+                      : '营销活动'
+                  }}
+                </DescriptionsItem>
                 <DescriptionsItem label="拼团价格">
-{{
-                  detail.groupEnabled
-                    ? money(detail.groupPriceCent)
-                    : '未开启拼团'
-                }}
-</DescriptionsItem>
+                  {{
+                    detail.groupEnabled
+                      ? money(detail.groupPriceCent)
+                      : '未开启拼团'
+                  }}
+                </DescriptionsItem>
                 <DescriptionsItem label="单买价格">
-{{
-                  money(detail.singlePriceCent)
-                }}
-</DescriptionsItem>
+                  {{ money(detail.singlePriceCent) }}
+                </DescriptionsItem>
                 <DescriptionsItem label="虚拟浏览量">
-{{
-                  detail.virtualViewCount
-                }}
-</DescriptionsItem>
+                  {{ detail.virtualViewCount }}
+                </DescriptionsItem>
                 <DescriptionsItem label="虚拟报名人数">
                   {{ detail.virtualRegistrationCount }}
                 </DescriptionsItem>
                 <DescriptionsItem label="小程序" :span="2">
-{{
-                  detail.miniapp
-                    ? `${detail.miniapp.name}（${detail.miniapp.appid}）`
-                    : '未配置'
-                }}
-</DescriptionsItem>
+                  {{
+                    detail.miniapp
+                      ? `${detail.miniapp.name}（${detail.miniapp.appid}）`
+                      : '未配置'
+                  }}
+                </DescriptionsItem>
                 <DescriptionsItem label="参与门店" :span="2">
-{{
-                  detail.stores
-                    .map(
-                      (x) =>
-                        x.name + (x.status === 'disabled' ? '（已停用）' : ''),
-                    )
-                    .join('、') || '未配置'
-                }}
-</DescriptionsItem>
+                  {{
+                    detail.stores
+                      .map(
+                        (x) =>
+                          x.name +
+                          (x.status === 'disabled' ? '（已停用）' : ''),
+                      )
+                      .join('、') || '未配置'
+                  }}
+                </DescriptionsItem>
                 <DescriptionsItem label="提交审核时间">
-{{
-                  date(detail.submittedAt)
-                }}
-</DescriptionsItem>
+                  {{ date(detail.submittedAt) }}
+                </DescriptionsItem>
                 <DescriptionsItem label="平台审核时间">
-{{
-                  date(detail.reviewedAt)
-                }}
-</DescriptionsItem>
+                  {{ date(detail.reviewedAt) }}
+                </DescriptionsItem>
                 <DescriptionsItem label="发布时间">
-{{
-                  date(detail.publishedAt)
-                }}
-</DescriptionsItem>
+                  {{ date(detail.publishedAt) }}
+                </DescriptionsItem>
               </Descriptions>
             </Card>
             <Card size="small" title="活动海报" class="mb-4">
@@ -406,10 +429,10 @@ onBeforeUnmount(() => {
               <span v-else>未配置</span>
             </Card>
             <Card size="small" title="活动规则" class="mb-4">
-<p class="whitespace-pre-wrap break-words">
+              <p class="whitespace-pre-wrap break-words">
                 {{ detail.rulesText || '未配置' }}
               </p>
-</Card>
+            </Card>
             <Card size="small" title="活动详情素材" class="mb-4">
               <div v-if="detail.detailMedia.length" class="flex flex-col gap-4">
                 <div
@@ -482,35 +505,31 @@ onBeforeUnmount(() => {
             <Card size="small" title="员工与其他设置" class="mb-4">
               <Descriptions :column="{ xs: 1, sm: 2 }">
                 <DescriptionsItem label="参与员工范围">
-{{
-                  detail.employeeScope === 'all' ? '全部有效员工' : '指定员工'
-                }}
-</DescriptionsItem>
+                  {{
+                    detail.employeeScope === 'all' ? '全部有效员工' : '指定员工'
+                  }}
+                </DescriptionsItem>
                 <DescriptionsItem label="允许邀请申请加入">
-{{
-                  detail.employeeRegistrationEnabled ? '是' : '否'
-                }}
-</DescriptionsItem>
+                  {{ detail.employeeRegistrationEnabled ? '是' : '否' }}
+                </DescriptionsItem>
                 <DescriptionsItem label="组员业绩范围">
-{{
-                  scope(detail.memberPerformanceScope)
-                }}
-</DescriptionsItem>
+                  {{ scope(detail.memberPerformanceScope) }}
+                </DescriptionsItem>
                 <DescriptionsItem label="组长业绩范围">
-{{
-                  scope(detail.leaderPerformanceScope)
-                }}
-</DescriptionsItem>
+                  {{ scope(detail.leaderPerformanceScope) }}
+                </DescriptionsItem>
                 <DescriptionsItem label="联系电话顺序" :span="2">
-{{
-                  detail.contactPhonePriority
-                    .map(
-                      (x) =>
-                        ({ sales: '销售', store: '门店', company: '公司' })[x],
-                    )
-                    .join(' → ')
-                }}
-</DescriptionsItem>
+                  {{
+                    detail.contactPhonePriority
+                      .map(
+                        (x) =>
+                          ({ sales: '销售', store: '门店', company: '公司' })[
+                            x
+                          ],
+                      )
+                      .join(' → ')
+                  }}
+                </DescriptionsItem>
               </Descriptions>
               <ReviewMedia
                 v-if="detail.musicUrl"
@@ -520,7 +539,9 @@ onBeforeUnmount(() => {
               />
             </Card>
             <div v-if="canReview" class="pb-3">
-              <label for="activity-review-reason" class="mb-2 block">审核未通过原因</label>
+              <label for="activity-review-reason" class="mb-2 block"
+                >审核未通过原因</label
+              >
               <Input.TextArea
                 id="activity-review-reason"
                 v-model:value="reason"
@@ -540,22 +561,32 @@ onBeforeUnmount(() => {
         <template #footer>
           <Space class="flex justify-end" wrap>
             <Button :disabled="reviewing" @click="close">关闭</Button>
+            <ActivitySchedule
+              v-if="detail && !reviewing"
+              :activity="detail"
+              @changed="
+                (updated) => {
+                  detail = updated;
+                  void load();
+                }
+              "
+            />
             <Button
               v-if="canReview"
               danger
               :loading="reviewing"
               @click="review('rejected')"
-              >
-审核未通过
-</Button>
+            >
+              审核未通过
+            </Button>
             <Button
               v-if="canReview"
               type="primary"
               :loading="reviewing"
               @click="review('approved')"
-              >
-审核通过
-</Button>
+            >
+              审核通过
+            </Button>
           </Space>
         </template>
       </Drawer>

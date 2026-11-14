@@ -7,10 +7,36 @@ const routes: RouteRecordRaw[] = [
     meta: {
       title: '客户管理',
       icon: 'lucide:contact-round',
-      authority: ['owner', 'admin', 'activity_manager'],
+      authority: ['admin', 'member'],
       order: 6,
     },
   },
+  // 免费报名版没有“订单”，报名记录只从活动详情/客户记录进入，不占菜单。
+  {
+    name: 'Registrations',
+    path: '/registrations',
+    component: () => import('#/views/management/registrations.vue'),
+    meta: {
+      title: '报名记录',
+      authority: ['admin', 'member'],
+      hideInMenu: true,
+      activePath: '/activities',
+      order: 7,
+    },
+  },
+  {
+    name: 'RegistrationsByActivity',
+    path: '/activities/:id/registrations',
+    component: () => import('#/views/management/registrations.vue'),
+    meta: {
+      title: '报名记录',
+      authority: ['admin', 'member'],
+      hideInMenu: true,
+      activePath: '/activities',
+    },
+  },
+  // 订单线（团购/付费活动）保留完整页面与接口，本期先不在菜单暴露。
+  // hideInMenu 只影响导航渲染，路由本身可直达，功能不删。
   {
     name: 'ActivityOrders',
     path: '/orders',
@@ -18,8 +44,9 @@ const routes: RouteRecordRaw[] = [
     meta: {
       title: '活动订单',
       icon: 'lucide:clipboard-list',
-      authority: ['owner', 'admin', 'activity_manager'],
-      order: 7,
+      authority: ['admin', 'member'],
+      hideInMenu: true,
+      order: 8,
     },
   },
   {
@@ -28,7 +55,7 @@ const routes: RouteRecordRaw[] = [
     component: () => import('#/views/management/orders.vue'),
     meta: {
       title: '订单管理',
-      authority: ['owner', 'admin', 'member'],
+      authority: ['admin', 'member'],
       hideInMenu: true,
       activePath: '/activities',
     },
@@ -40,7 +67,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       title: '小程序',
       icon: 'lucide:smartphone',
-      authority: ['owner', 'admin'],
+      authority: ['admin'],
       order: 5,
     },
   },
@@ -49,7 +76,7 @@ const routes: RouteRecordRaw[] = [
     path: '/activities',
     component: () => import('#/views/management/activities.vue'),
     meta: {
-      authority: ['owner', 'admin', 'member'],
+      authority: ['admin', 'member'],
       title: '活动管理',
       icon: 'lucide:calendar-days',
       order: 2,
@@ -60,7 +87,7 @@ const routes: RouteRecordRaw[] = [
     path: '/activities/:id',
     component: () => import('#/views/management/activity-detail.vue'),
     meta: {
-      authority: ['owner', 'admin', 'member'],
+      authority: ['admin', 'member'],
       title: '活动详情',
       hideInMenu: true,
       activePath: '/activities',
@@ -73,7 +100,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       title: '员工管理',
       icon: 'lucide:users',
-      authority: ['owner', 'admin'],
+      authority: ['admin'],
       order: 3,
     },
   },
@@ -84,7 +111,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       title: '门店管理',
       icon: 'lucide:store',
-      authority: ['owner', 'admin'],
+      authority: ['admin'],
       order: 4,
     },
   },

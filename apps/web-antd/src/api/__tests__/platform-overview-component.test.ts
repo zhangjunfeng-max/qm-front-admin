@@ -162,8 +162,8 @@ describe('platform operating overview', () => {
       expect(root.textContent).toContain('累计活动 100 场'),
     );
     api.overview.mockRejectedValueOnce(new Error('permission revoked'));
-    [...root.querySelectorAll('button')]
-      .find((button) => button.textContent?.replaceAll(/\s/g, '') === '刷新')!
+    [...root.querySelectorAll('label')]
+      .find((item) => item.textContent?.includes('近30天'))!
       .click();
     await vi.waitFor(() =>
       expect(root.textContent).toContain('运营数据加载失败'),

@@ -307,20 +307,8 @@ onUnmounted(() => {
 
 <template>
   <Page
-    title="平台首页"
-    description="查看全部公司的运营与业务情况"
     content-class="flex flex-col gap-4"
   >
-    <template #extra>
-      <Space wrap>
-        <span class="text-muted-foreground text-xs">
-          北京时间 · {{ date(overview?.generatedAt) }} 更新
-        </span>
-        <Button :loading="loading || companiesLoading" @click="refresh">
-          刷新
-        </Button>
-      </Space>
-    </template>
     <Alert
       v-if="failed"
       type="error"

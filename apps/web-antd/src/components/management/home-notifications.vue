@@ -27,7 +27,7 @@ const props = withDefaults(
   defineProps<{
     pageSize?: number;
   }>(),
-  { pageSize: 6 },
+  { pageSize: 15 },
 );
 const center = useNotificationStore();
 const router = useRouter();
@@ -156,7 +156,7 @@ onUnmounted(() => {
     <Spin :spinning="loading">
       <div
         v-if="!failed && !items.length"
-        class="flex min-h-[292px] items-center justify-center"
+        class="flex min-h-[160px] items-center justify-center"
       >
         <Empty
           :image="Empty.PRESENTED_IMAGE_SIMPLE"
@@ -165,12 +165,15 @@ onUnmounted(() => {
           "
         />
       </div>
-      <div v-else-if="items.length" class="divide-y divide-border">
+      <div
+        v-else-if="items.length"
+        class="grid grid-cols-1 gap-1 md:grid-cols-2 xl:grid-cols-3"
+      >
         <button
           v-for="notice in items"
           :key="notice.id"
           type="button"
-          class="flex w-full min-w-0 flex-col gap-1 py-2 text-left first:pt-0 last:pb-0 hover:bg-muted/40"
+          class="flex w-full min-w-0 flex-col gap-1 rounded-sm px-2 py-1.5 text-left hover:bg-muted/60"
           :disabled="Boolean(center.openingId)"
           @click="openNotice(notice.id)"
         >
@@ -196,7 +199,20 @@ onUnmounted(() => {
 
 <style scoped>
 .home-notifications-panel :deep(.ant-card-body) {
-  max-height: 392px;
+  max-height: 360px;
   overflow-y: auto;
+}
+
+.home-notifications-panel :deep(.ant-card-head) {
+  min-height: 38px;
+  padding-inline: 10px;
+}
+
+.home-notifications-panel :deep(.ant-card-head-title) {
+  padding-block: 8px;
+}
+
+.home-notifications-panel :deep(.ant-card-body) {
+  padding: 8px;
 }
 </style>

@@ -17,6 +17,7 @@ export interface NoticeQuery {
   page: number;
   pageSize: number;
   status: 'all' | 'unread';
+  kind?: string;
 }
 export interface NoticeList {
   items: Notice[];

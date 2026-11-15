@@ -20,6 +20,7 @@ import {
 import { getCompanyOverviewApi } from '#/api/company-overview';
 import { captureContext } from '#/api/context-lifecycle';
 import CompanyProfile from '#/components/management/company-profile.vue';
+import HomeNotifications from '#/components/management/home-notifications.vue';
 import PerformancePanel from '#/components/performance/performance-panel.vue';
 import { useAuthStore } from '#/store';
 
@@ -209,6 +210,7 @@ onUnmounted(() => {
         <Button size="small" @click="load">重试</Button>
       </template>
     </Alert>
+    <HomeNotifications />
     <Card
       v-if="!authStore.profile?.isPlatformAdmin"
       size="small"

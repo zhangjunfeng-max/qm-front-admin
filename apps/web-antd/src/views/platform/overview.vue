@@ -31,6 +31,7 @@ import {
   getPlatformCompanyOverviewApi,
   getPlatformOverviewApi,
 } from '#/api/platform-overview';
+import HomeNotifications from '#/components/management/home-notifications.vue';
 
 import OverviewTrend from './overview-trend.vue';
 
@@ -330,6 +331,7 @@ onUnmounted(() => {
         <Button size="small" @click="loadOverview">重试</Button>
       </template>
     </Alert>
+    <HomeNotifications />
     <Spin :spinning="loading">
       <div class="grid grid-cols-2 gap-3 xl:grid-cols-4">
         <Card

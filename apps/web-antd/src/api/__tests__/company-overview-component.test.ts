@@ -36,6 +36,9 @@ vi.mock('@vben/common-ui', () => ({
 vi.mock('#/components/management/company-profile.vue', () => ({
   default: { template: '<div>公司资料编辑表单</div>' },
 }));
+vi.mock('#/components/management/home-notifications.vue', () => ({
+  default: { template: '<section>首页待处理通知</section>' },
+}));
 
 function response(manager = true) {
   return {
@@ -121,6 +124,7 @@ describe('company homepage', () => {
     expect(root.textContent).toContain('待支付 5');
     expect(root.textContent).toContain('待报名 6');
     expect(root.textContent).toContain('独立业绩排行榜');
+    expect(root.textContent).toContain('首页待处理通知');
     expect(root.textContent).not.toContain('利润');
     expect(root.textContent).not.toContain('公司资料编辑表单');
     click('报名记录');

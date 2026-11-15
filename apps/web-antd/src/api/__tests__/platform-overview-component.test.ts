@@ -28,6 +28,9 @@ vi.mock('@vben/common-ui', () => ({
 vi.mock('../../views/platform/overview-trend.vue', () => ({
   default: { template: '<div>趋势图</div>' },
 }));
+vi.mock('#/components/management/home-notifications.vue', () => ({
+  default: { template: '<section>平台待处理通知</section>' },
+}));
 
 function response(): PlatformOverview {
   return {
@@ -106,6 +109,7 @@ describe('platform operating overview', () => {
   it('shows real aggregate/company counts and labels unavailable traffic/orders without false zeros', async () => {
     const root = mount();
     await vi.waitFor(() => expect(root.textContent).toContain('第一公司'));
+    expect(root.textContent).toContain('平台待处理通知');
     expect(root.textContent).toContain('累计活动 100 场');
     expect(root.textContent).toContain('暂无浏览统计');
     expect(root.textContent).toContain('暂无订单统计');

@@ -21,6 +21,7 @@ export function createNotificationCenter(api: typeof notificationApi) {
   const failed = ref(false);
   const contextVersion = ref(0);
   const revision = ref(0);
+  const refreshVersion = ref(0);
   const scope = ref<NotificationScope | null>(null);
   let key = '';
   let controller = new AbortController();
@@ -98,6 +99,7 @@ export function createNotificationCenter(api: typeof notificationApi) {
         unreadCount.value = value.unreadCount;
         canPublish.value = value.canPublish;
         failed.value = false;
+        ++refreshVersion.value;
       })
       .catch(() => {
         if (version === contextVersion.value) failed.value = true;
@@ -206,6 +208,7 @@ export function createNotificationCenter(api: typeof notificationApi) {
     failed,
     contextVersion,
     revision,
+    refreshVersion,
     scope,
     bind,
     start,

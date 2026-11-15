@@ -23,6 +23,12 @@ import {
   notificationTypeOptions,
 } from './notification-types';
 
+const props = withDefaults(
+  defineProps<{
+    pageSize?: number;
+  }>(),
+  { pageSize: 6 },
+);
 const center = useNotificationStore();
 const router = useRouter();
 const selectedKind = ref('all');
@@ -62,7 +68,7 @@ async function load() {
   failed.value = false;
   const query: NoticeQuery = {
     page: 1,
-    pageSize: 5,
+    pageSize: props.pageSize,
     status: 'unread',
   };
   if (selectedKind.value !== 'all') query.kind = selectedKind.value;
@@ -111,7 +117,11 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <Card size="small" class="min-w-0" data-home-notifications>
+  <Card
+    size="small"
+    class="home-notifications-panel min-w-0"
+    data-home-notifications
+  >
     <template #title>
       <div class="flex items-center gap-2">
         <span>待处理通知</span>
@@ -144,19 +154,23 @@ onUnmounted(() => {
       </template>
     </Alert>
     <Spin :spinning="loading">
-      <Empty
+      <div
         v-if="!failed && !items.length"
-        :image="Empty.PRESENTED_IMAGE_SIMPLE"
-        :description="
-          selectedKind === 'all' ? '暂无未处理通知' : '该类型暂无未处理通知'
-        "
-      />
+        class="flex min-h-[292px] items-center justify-center"
+      >
+        <Empty
+          :image="Empty.PRESENTED_IMAGE_SIMPLE"
+          :description="
+            selectedKind === 'all' ? '暂无未处理通知' : '该类型暂无未处理通知'
+          "
+        />
+      </div>
       <div v-else-if="items.length" class="divide-y divide-border">
         <button
           v-for="notice in items"
           :key="notice.id"
           type="button"
-          class="flex w-full min-w-0 flex-col gap-1 py-3 text-left first:pt-0 last:pb-0 hover:bg-muted/40"
+          class="flex w-full min-w-0 flex-col gap-1 py-2 text-left first:pt-0 last:pb-0 hover:bg-muted/40"
           :disabled="Boolean(center.openingId)"
           @click="openNotice(notice.id)"
         >
@@ -171,7 +185,7 @@ onUnmounted(() => {
               {{ date(notice.createdAt) }}
             </span>
           </div>
-          <p class="text-muted-foreground line-clamp-2 text-sm">
+          <p class="text-muted-foreground line-clamp-1 text-sm">
             {{ notice.message }}
           </p>
         </button>
@@ -179,3 +193,10 @@ onUnmounted(() => {
     </Spin>
   </Card>
 </template>
+
+<style scoped>
+.home-notifications-panel :deep(.ant-card-body) {
+  max-height: 392px;
+  overflow-y: auto;
+}
+</style>

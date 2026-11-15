@@ -66,7 +66,7 @@ it('shows unread notice information and opens the permission-checked notice', as
 
   expect(mocks.center.list).toHaveBeenCalledWith({
     page: 1,
-    pageSize: 5,
+    pageSize: 6,
     status: 'unread',
   });
   expect(root.textContent).toContain('活动报名');
@@ -97,7 +97,7 @@ it('requests server-side filtering by notification type', async () => {
   await vi.waitFor(() =>
     expect(mocks.center.list).toHaveBeenLastCalledWith({
       page: 1,
-      pageSize: 5,
+      pageSize: 6,
       status: 'unread',
       kind: 'customer_lead_created',
     }),

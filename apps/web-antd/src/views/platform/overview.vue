@@ -319,39 +319,43 @@ onUnmounted(() => {
         <Button size="small" @click="loadOverview">重试</Button>
       </template>
     </Alert>
-    <HomeNotifications />
-    <Spin :spinning="loading">
-      <div class="grid grid-cols-2 gap-3 xl:grid-cols-4">
-        <Card
-          v-for="metric in metrics"
-          :key="metric.title"
-          size="small"
-          class="min-w-0"
-        >
-          <div class="text-muted-foreground flex items-center gap-2 text-sm">
-            {{ metric.title }}
-            <Tooltip v-if="metric.help" :title="metric.help">
-              <button
-                type="button"
-                :aria-label="`${metric.title}统计说明`"
-                class="text-muted-foreground inline-flex size-4 items-center justify-center rounded-full border text-[11px]"
-              >
-                ?
-              </button>
-            </Tooltip>
-          </div>
-          <div
-            class="my-2 text-3xl font-semibold tabular-nums"
-            :class="{ 'text-muted-foreground': metric.value == null }"
+    <div
+      class="grid min-w-0 items-start gap-4 xl:grid-cols-[minmax(360px,0.9fr)_minmax(0,2.1fr)]"
+    >
+      <HomeNotifications />
+      <Spin :spinning="loading">
+        <div class="grid grid-cols-2 gap-3 xl:grid-cols-4">
+          <Card
+            v-for="metric in metrics"
+            :key="metric.title"
+            size="small"
+            class="min-w-0"
           >
-            {{ count(metric.value) }}
-          </div>
-          <div class="text-muted-foreground truncate text-xs">
-            {{ metric.detail }}
-          </div>
-        </Card>
-      </div>
-    </Spin>
+            <div class="text-muted-foreground flex items-center gap-2 text-sm">
+              {{ metric.title }}
+              <Tooltip v-if="metric.help" :title="metric.help">
+                <button
+                  type="button"
+                  :aria-label="`${metric.title}统计说明`"
+                  class="text-muted-foreground inline-flex size-4 items-center justify-center rounded-full border text-[11px]"
+                >
+                  ?
+                </button>
+              </Tooltip>
+            </div>
+            <div
+              class="my-2 text-3xl font-semibold tabular-nums"
+              :class="{ 'text-muted-foreground': metric.value == null }"
+            >
+              {{ count(metric.value) }}
+            </div>
+            <div class="text-muted-foreground truncate text-xs">
+              {{ metric.detail }}
+            </div>
+          </Card>
+        </div>
+      </Spin>
+    </div>
     <div class="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-3">
       <Card title="新增趋势" size="small" class="min-w-0 xl:col-span-2">
         <template #extra>

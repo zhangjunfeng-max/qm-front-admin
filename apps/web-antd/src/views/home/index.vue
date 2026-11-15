@@ -210,110 +210,114 @@ onUnmounted(() => {
         <Button size="small" @click="load">重试</Button>
       </template>
     </Alert>
-    <HomeNotifications />
-    <Card
-      v-if="!authStore.profile?.isPlatformAdmin"
-      size="small"
-      title="我的本月业绩"
+    <div
+      class="grid min-w-0 items-start gap-4 xl:grid-cols-[minmax(360px,0.9fr)_minmax(0,2.1fr)]"
     >
-      <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div>
-          <div class="text-muted-foreground text-sm">报名人数</div>
-          <Button
-            type="link"
-            class="!h-auto !px-0 !text-xl"
-            @click="
-              router.push({
-                path: '/registrations',
-                query: {
-                  onlySelf: 'true',
-                  period: 'month',
-                  event: 'registrations',
-                  status: 'registered',
-                },
-              })
-            "
-            >{{ count(overview?.personal?.registrations) }}</Button
-          >
-        </div>
-        <div>
-          <div class="text-muted-foreground text-sm">成交订单</div>
-          <Button
-            type="link"
-            class="!h-auto !px-0 !text-xl"
-            @click="
-              router.push({
-                path: '/registrations',
-                query: { onlySelf: 'true', period: 'month', event: 'paid' },
-              })
-            "
-            >{{ count(overview?.personal?.paidOrders) }}</Button
-          >
-        </div>
-        <div>
-          <div class="text-muted-foreground text-sm">净成交金额</div>
-          <Button
-            type="link"
-            class="!h-auto !px-0 !text-xl"
-            @click="
-              router.push({
-                path: '/registrations',
-                query: { onlySelf: 'true', period: 'month', event: 'paid' },
-              })
-            "
-            >{{ money(overview?.personal?.netRevenueCent) }}</Button
-          >
-        </div>
-        <div>
-          <div class="text-muted-foreground text-sm">我参加的活动</div>
-          <Button
-            type="link"
-            class="!px-0"
-            @click="router.push('/activities?onlyJoined=true')"
-          >
-            {{ count(overview?.joinedActivities) }} 场
-          </Button>
-        </div>
-      </div>
-    </Card>
-    <Spin :spinning="loading">
-      <div
-        class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6"
-      >
+      <HomeNotifications />
+      <div class="flex min-w-0 flex-col gap-3">
         <Card
-          v-for="metric in metrics"
-          :key="metric.key"
-          :data-metric="metric.key"
+          v-if="!authStore.profile?.isPlatformAdmin"
           size="small"
-          class="min-w-0"
+          title="我的本月业绩"
         >
-          <div class="text-muted-foreground flex items-center gap-2 text-sm">
-            {{ metric.title }}
-            <Tooltip :title="metric.help">
-              <button
-                type="button"
-                :aria-label="`${metric.title}统计说明`"
-                class="text-muted-foreground inline-flex size-4 items-center justify-center rounded-full border text-[11px]"
+          <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div>
+              <div class="text-muted-foreground text-sm">报名人数</div>
+              <Button
+                type="link"
+                class="!h-auto !px-0 !text-xl"
+                @click="
+                  router.push({
+                    path: '/registrations',
+                    query: {
+                      onlySelf: 'true',
+                      period: 'month',
+                      event: 'registrations',
+                      status: 'registered',
+                    },
+                  })
+                "
+                >{{ count(overview?.personal?.registrations) }}</Button
               >
-                ?
-              </button>
-            </Tooltip>
-          </div>
-          <div
-            class="my-2 truncate text-2xl font-semibold tabular-nums"
-            :title="metric.value"
-            :class="metric.key === 'income' ? 'text-primary' : undefined"
-          >
-            {{ metric.value }}
-          </div>
-          <Tooltip :title="metric.detail">
-            <div class="text-muted-foreground truncate text-xs">
-              {{ metric.detail }}
             </div>
-          </Tooltip>
+            <div>
+              <div class="text-muted-foreground text-sm">成交订单</div>
+              <Button
+                type="link"
+                class="!h-auto !px-0 !text-xl"
+                @click="
+                  router.push({
+                    path: '/registrations',
+                    query: { onlySelf: 'true', period: 'month', event: 'paid' },
+                  })
+                "
+                >{{ count(overview?.personal?.paidOrders) }}</Button
+              >
+            </div>
+            <div>
+              <div class="text-muted-foreground text-sm">净成交金额</div>
+              <Button
+                type="link"
+                class="!h-auto !px-0 !text-xl"
+                @click="
+                  router.push({
+                    path: '/registrations',
+                    query: { onlySelf: 'true', period: 'month', event: 'paid' },
+                  })
+                "
+                >{{ money(overview?.personal?.netRevenueCent) }}</Button
+              >
+            </div>
+            <div>
+              <div class="text-muted-foreground text-sm">我参加的活动</div>
+              <Button
+                type="link"
+                class="!px-0"
+                @click="router.push('/activities?onlyJoined=true')"
+              >
+                {{ count(overview?.joinedActivities) }} 场
+              </Button>
+            </div>
+          </div>
         </Card>
+        <Spin :spinning="loading">
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <Card
+              v-for="metric in metrics"
+              :key="metric.key"
+              :data-metric="metric.key"
+              size="small"
+              class="min-w-0"
+            >
+              <div class="text-muted-foreground flex items-center gap-2 text-sm">
+                {{ metric.title }}
+                <Tooltip :title="metric.help">
+                  <button
+                    type="button"
+                    :aria-label="`${metric.title}统计说明`"
+                    class="text-muted-foreground inline-flex size-4 items-center justify-center rounded-full border text-[11px]"
+                  >
+                    ?
+                  </button>
+                </Tooltip>
+              </div>
+              <div
+                class="my-2 truncate text-2xl font-semibold tabular-nums"
+                :title="metric.value"
+                :class="metric.key === 'income' ? 'text-primary' : undefined"
+              >
+                {{ metric.value }}
+              </div>
+              <Tooltip :title="metric.detail">
+                <div class="text-muted-foreground truncate text-xs">
+                  {{ metric.detail }}
+                </div>
+              </Tooltip>
+            </Card>
+          </div>
+        </Spin>
       </div>
-    </Spin>
+    </div>
     <Card size="small" class="min-w-0">
       <div class="flex flex-wrap items-center gap-2">
         <span class="text-muted-foreground mr-2 text-sm">快捷入口</span>

@@ -13,16 +13,6 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
-    name: 'LegacyTenantHome',
-    path: '/tenant',
-    redirect: '/home',
-    meta: {
-      hideInMenu: true,
-      hideInTab: true,
-      title: '首页',
-    },
-  },
-  {
     name: 'Account',
     path: '/account',
     component: () => import('#/views/account/index.vue'),

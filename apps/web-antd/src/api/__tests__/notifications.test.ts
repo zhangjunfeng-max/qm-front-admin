@@ -48,7 +48,19 @@ afterEach(() => vi.useRealTimers());
 it('opens full activity change details before navigating and clears them on company switch', async () => {
   const { api, center } = setup();
   center.bind('platform', 'platform-user');
-  api.detail.mockResolvedValue({ ...notice, kind: 'activity_changed', link: '/platform/activities?activityId=activity-a', changes: [{ field: 'musicUrl', label: '背景音乐', before: 'old.mp3', after: 'new.mp3' }] });
+  api.detail.mockResolvedValue({
+    ...notice,
+    kind: 'activity_changed',
+    link: '/platform/activities?activityId=activity-a',
+    changes: [
+      {
+        field: 'musicUrl',
+        label: '背景音乐',
+        before: 'old.mp3',
+        after: 'new.mp3',
+      },
+    ],
+  });
   const navigate = vi.fn();
   await center.activate('delivery-a', navigate);
   expect(navigate).not.toHaveBeenCalled();
@@ -61,7 +73,9 @@ it('aborts and clears A -> B -> A, rejects late results and clears on user chang
   const old = deferred<ReturnType<typeof result>>();
   api.list.mockReturnValueOnce(old.promise);
   const pending = center.refresh();
-  const signal = api.list.mock.calls[0]![2];
+  const listCall = api.list.mock.calls[0];
+  if (!listCall) throw new Error('expected notification list request');
+  const signal = listCall[2];
   center.bind('admin', 'user-a:company-b');
   expect(signal.aborted).toBe(true);
   center.bind('admin', 'user-a:company-a');
@@ -86,7 +100,7 @@ it('polls every 10 seconds only in foreground without overlapping and cleans up'
   expect(api.list).toHaveBeenCalledTimes(1);
   old.resolve(result());
   await vi.advanceTimersByTimeAsync(0);
-  await vi.advanceTimersByTimeAsync(9_999);
+  await vi.advanceTimersByTimeAsync(9999);
   expect(api.list).toHaveBeenCalledTimes(1);
   await vi.advanceTimersByTimeAsync(1);
   expect(api.list).toHaveBeenCalledTimes(2);
@@ -107,12 +121,12 @@ it('polls every 10 seconds only in foreground without overlapping and cleans up'
 });
 it('cannot navigate or reload a new context after an old read finishes', async () => {
   const { api, center } = setup();
-  const read = deferred<void>();
+  const read = deferred<undefined>();
   api.read.mockReturnValueOnce(read.promise);
   const open = center.open(notice.id);
   await Promise.resolve();
   center.bind('admin', 'user-a:company-b');
-  read.resolve();
+  read.resolve(undefined);
   expect(await open).toBeUndefined();
   expect(api.list).not.toHaveBeenCalled();
 });
@@ -126,10 +140,21 @@ it('marks read only after loading detail and accepts only permitted internal bus
   expect(detail?.link).toBe('');
   expect(center.unreadCount.value).toBe(1);
 });
+it('accepts registration detail links produced by customer order notifications', async () => {
+  const { api, center } = setup();
+  const link = '/activities/activity-a/registrations?detailId=registration-a';
+  api.detail.mockResolvedValueOnce({
+    ...notice,
+    kind: 'customer_order_created',
+    link,
+  });
+  const detail = await center.open(notice.id);
+  expect(detail?.link).toBe(link);
+});
 it('suppresses stale publish and delete completions', async () => {
   const { api, center } = setup();
   const publish = deferred<{ recipients: number }>();
-  const remove = deferred<void>();
+  const remove = deferred<undefined>();
   api.publish.mockReturnValueOnce(publish.promise);
   api.remove.mockReturnValueOnce(remove.promise);
   const sending = center.publish({
@@ -141,7 +166,7 @@ it('suppresses stale publish and delete completions', async () => {
   const deleting = center.remove(notice.id);
   center.bind(null, '');
   publish.resolve({ recipients: 2 });
-  remove.resolve();
+  remove.resolve(undefined);
   expect(await sending).toBeUndefined();
   expect(await deleting).toBeUndefined();
   expect(api.list).not.toHaveBeenCalled();

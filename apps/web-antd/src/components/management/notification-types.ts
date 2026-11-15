@@ -1,66 +1,79 @@
 import type { NotificationScope } from '#/api/notifications';
 
-const labels: Record<string, string> = {
-  activity_changed: '活动修改',
-  activity_review_decided: '审核结果',
-  activity_review_requested: '活动待审核',
-  activity_staff_decided: '申请结果',
-  activity_staff_requested: '员工申请',
-  company_announcement: '公司公告',
-  customer_lead_created: '客户线索',
-  customer_order_created: '活动报名',
-  platform_announcement: '平台公告',
-};
-
-const companyKinds = [
-  'customer_lead_created',
-  'customer_order_created',
-  'activity_staff_requested',
-  'activity_staff_decided',
-  'activity_review_decided',
-  'company_announcement',
-  'platform_announcement',
-];
-
-const platformKinds = [
-  'activity_review_requested',
-  'activity_changed',
-  'platform_announcement',
+const notificationTypes = [
+  {
+    kind: 'activity_changed',
+    label: '活动修改',
+    color: 'gold',
+    scopes: ['platform'],
+  },
+  {
+    kind: 'activity_review_decided',
+    label: '审核结果',
+    color: 'success',
+    scopes: ['admin'],
+  },
+  {
+    kind: 'activity_review_requested',
+    label: '活动待审核',
+    color: 'warning',
+    scopes: ['platform'],
+  },
+  {
+    kind: 'activity_staff_decided',
+    label: '申请结果',
+    color: undefined,
+    scopes: ['admin'],
+  },
+  {
+    kind: 'activity_staff_requested',
+    label: '员工申请',
+    color: 'gold',
+    scopes: ['admin'],
+  },
+  {
+    kind: 'company_announcement',
+    label: '公司公告',
+    color: 'blue',
+    scopes: ['admin'],
+  },
+  {
+    kind: 'customer_lead_created',
+    label: '客户线索',
+    color: 'processing',
+    scopes: ['admin'],
+  },
+  {
+    kind: 'customer_order_created',
+    label: '活动报名',
+    color: 'success',
+    scopes: ['admin'],
+  },
+  {
+    kind: 'platform_announcement',
+    label: '平台公告',
+    color: 'blue',
+    scopes: ['admin', 'platform'],
+  },
 ];
 
 export function notificationTypeLabel(kind: string) {
-  return labels[kind] ?? '其他通知';
+  return (
+    notificationTypes.find((item) => item.kind === kind)?.label ?? '其他通知'
+  );
 }
 
 export function notificationTypeColor(kind: string) {
-  if (kind === 'customer_order_created') return 'success';
-  if (kind === 'customer_lead_created') return 'processing';
-  if (kind === 'activity_review_requested') return 'warning';
-  if (kind === 'activity_review_decided') {
-    return 'success';
-  }
-  if (
-    kind === 'activity_changed' ||
-    kind === 'activity_staff_requested'
-  ) {
-    return 'gold';
-  }
-  if (
-    kind === 'company_announcement' ||
-    kind === 'platform_announcement'
-  ) {
-    return 'blue';
-  }
-  return undefined;
+  return notificationTypes.find((item) => item.kind === kind)?.color;
 }
 
 export function notificationTypeOptions(scope: NotificationScope) {
-  const kinds = scope === 'platform' ? platformKinds : companyKinds;
   return [
     { label: '全部类型', value: 'all' },
-    ...kinds.map((value) => ({
-      label: notificationTypeLabel(value),
-      value,
-    })),
+    ...notificationTypes
+      .filter((item) =>
+        (item.scopes as readonly NotificationScope[]).includes(scope),
+      )
+      .map((item) => ({ label: item.label, value: item.kind })),
   ];
 }

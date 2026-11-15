@@ -16,6 +16,7 @@ import {
 } from 'ant-design-vue';
 
 import { useNotificationStore } from '#/store/notifications';
+import { dateTime } from '#/views/home/format';
 
 import {
   notificationTypeColor,
@@ -23,12 +24,7 @@ import {
   notificationTypeOptions,
 } from './notification-types';
 
-const props = withDefaults(
-  defineProps<{
-    pageSize?: number;
-  }>(),
-  { pageSize: 15 },
-);
+const pageSize = 15;
 const center = useNotificationStore();
 const router = useRouter();
 const selectedKind = ref('all');
@@ -41,19 +37,6 @@ let requestVersion = 0;
 const typeOptions = computed(() =>
   notificationTypeOptions(center.scope ?? 'admin'),
 );
-const timeFormatter = new Intl.DateTimeFormat('zh-CN', {
-  timeZone: 'Asia/Shanghai',
-  month: '2-digit',
-  day: '2-digit',
-  hour: '2-digit',
-  minute: '2-digit',
-  hour12: false,
-});
-
-function date(value: string) {
-  return timeFormatter.format(new Date(value));
-}
-
 async function load() {
   const current = ++requestVersion;
   const context = center.contextVersion;
@@ -68,7 +51,7 @@ async function load() {
   failed.value = false;
   const query: NoticeQuery = {
     page: 1,
-    pageSize: props.pageSize,
+    pageSize,
     status: 'unread',
   };
   if (selectedKind.value !== 'all') query.kind = selectedKind.value;
@@ -99,7 +82,11 @@ async function openNotice(id: string) {
 }
 
 watch(
-  [() => center.contextVersion, () => center.revision, () => center.refreshVersion],
+  [
+    () => center.contextVersion,
+    () => center.revision,
+    () => center.refreshVersion,
+  ],
   () => void load(),
   { immediate: true },
 );
@@ -143,12 +130,7 @@ onUnmounted(() => {
         </Button>
       </Space>
     </template>
-    <Alert
-      v-if="failed"
-      type="error"
-      message="通知加载失败"
-      show-icon
-    >
+    <Alert v-if="failed" type="error" message="通知加载失败" show-icon>
       <template #action>
         <Button size="small" @click="load">重试</Button>
       </template>
@@ -156,7 +138,7 @@ onUnmounted(() => {
     <Spin :spinning="loading">
       <div
         v-if="!failed && !items.length"
-        class="flex min-h-[160px] items-center justify-center"
+        class="flex min-h-[96px] items-center justify-center"
       >
         <Empty
           :image="Empty.PRESENTED_IMAGE_SIMPLE"
@@ -185,7 +167,7 @@ onUnmounted(() => {
               {{ notice.title }}
             </strong>
             <span class="text-muted-foreground shrink-0 text-xs">
-              {{ date(notice.createdAt) }}
+              {{ dateTime(notice.createdAt) }}
             </span>
           </div>
           <p class="text-muted-foreground line-clamp-1 text-sm">
@@ -200,6 +182,7 @@ onUnmounted(() => {
 <style scoped>
 .home-notifications-panel :deep(.ant-card-body) {
   max-height: 360px;
+  padding: 8px;
   overflow-y: auto;
 }
 
@@ -210,9 +193,5 @@ onUnmounted(() => {
 
 .home-notifications-panel :deep(.ant-card-head-title) {
   padding-block: 8px;
-}
-
-.home-notifications-panel :deep(.ant-card-body) {
-  padding: 8px;
 }
 </style>

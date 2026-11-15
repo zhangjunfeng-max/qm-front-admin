@@ -32,6 +32,7 @@ import {
   getPlatformOverviewApi,
 } from '#/api/platform-overview';
 import HomeNotifications from '#/components/management/home-notifications.vue';
+import { dateTime } from '#/views/home/format';
 
 import OverviewTrend from './overview-trend.vue';
 
@@ -55,19 +56,18 @@ let companiesVersion = 0;
 
 const numberFormatter = new Intl.NumberFormat('zh-CN');
 function count(value: null | number | undefined) {
-  return value == null ? '—' : numberFormatter.format(value);
+  return value === null || value === undefined
+    ? '—'
+    : numberFormatter.format(value);
 }
-function date(value: null | string | undefined) {
-  return value
-    ? new Intl.DateTimeFormat('zh-CN', {
-        timeZone: 'Asia/Shanghai',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
-      }).format(new Date(value))
-    : '—';
+function availabilityDetail(
+  loaded: boolean,
+  value: null | number | undefined,
+  empty: string,
+  ready: string,
+) {
+  if (!loaded) return '等待数据';
+  return value === null || value === undefined ? empty : ready;
 }
 const summary = computed(() => overview.value?.summary);
 const metrics = computed(() => [
@@ -101,30 +101,33 @@ const metrics = computed(() => [
   {
     title: '整体真实浏览量',
     value: summary.value?.views,
-    detail: overview.value
-      ? summary.value?.views == null
-        ? '暂无浏览统计'
-        : '真实访问，不含虚拟浏览'
-      : '等待数据',
+    detail: availabilityDetail(
+      Boolean(overview.value),
+      summary.value?.views,
+      '暂无浏览统计',
+      '真实访问，不含虚拟浏览',
+    ),
     help: '只统计真实访问，不包含活动配置的虚拟浏览量。',
   },
   {
     title: '累计订单量',
     value: summary.value?.orders,
-    detail: overview.value
-      ? summary.value?.orders == null
-        ? '暂无订单统计'
-        : '全部活动累计订单'
-      : '等待数据',
+    detail: availabilityDetail(
+      Boolean(overview.value),
+      summary.value?.orders,
+      '暂无订单统计',
+      '全部活动累计订单',
+    ),
   },
   {
     title: '今日新增订单',
     value: summary.value?.todayOrders,
-    detail: overview.value
-      ? summary.value?.todayOrders == null
-        ? '暂无订单统计'
-        : '北京时间今日新增'
-      : '等待数据',
+    detail: availabilityDetail(
+      Boolean(overview.value),
+      summary.value?.todayOrders,
+      '暂无订单统计',
+      '北京时间今日新增',
+    ),
   },
 ]);
 const distribution = computed(() => [
@@ -306,9 +309,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <Page
-    content-class="dashboard-page flex flex-col gap-2 p-2"
-  >
+  <Page content-class="dashboard-page flex flex-col gap-2 p-2">
     <Alert
       v-if="failed"
       type="error"
@@ -319,7 +320,7 @@ onUnmounted(() => {
         <Button size="small" @click="loadOverview">重试</Button>
       </template>
     </Alert>
-    <HomeNotifications :page-size="15" />
+    <HomeNotifications />
     <Spin :spinning="loading">
       <div class="grid grid-cols-2 gap-2 xl:grid-cols-4">
         <Card
@@ -478,7 +479,7 @@ onUnmounted(() => {
               <template v-else>{{ count(record.todayOrders) }}</template>
             </template>
             <template v-else-if="column.key === 'lastActivityAt'">
-              {{ date(record.lastActivityAt) }}
+              {{ dateTime(record.lastActivityAt) }}
             </template>
           </template>
         </Table>
@@ -498,18 +499,3 @@ onUnmounted(() => {
     </Card>
   </Page>
 </template>
-
-<style>
-.dashboard-page .ant-card-head {
-  min-height: 38px;
-  padding-inline: 10px;
-}
-
-.dashboard-page .ant-card-head-title {
-  padding-block: 8px;
-}
-
-.dashboard-page .ant-card-body {
-  padding: 10px;
-}
-</style>

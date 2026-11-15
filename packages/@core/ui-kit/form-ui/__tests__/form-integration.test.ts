@@ -1069,7 +1069,11 @@ describe('useVbenForm integration', () => {
     await flushPromises();
 
     await formApi.setFieldValue('name', ' raw ');
-    await wrapper.get('form').trigger('submit');
+    wrapper
+      .get('form')
+      .element.dispatchEvent(
+        new Event('submit', { bubbles: true, cancelable: true }),
+      );
     await flushPromises();
 
     expect(onSubmit).toHaveBeenCalledOnce();

@@ -17,6 +17,8 @@ import App from './app.vue';
 import { router } from './router';
 import { useAuthStore } from './store';
 
+import './styles/dashboard-page.css';
+
 async function bootstrap(namespace: string) {
   // 初始化组件适配器
   await initComponentAdapter();

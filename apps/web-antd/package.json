@@ -44,7 +44,7 @@
     "ant-design-vue": "catalog:",
     "browser-image-compression": "2.0.2",
     "dayjs": "catalog:",
-    "node-forge": "1.4.0",
+    "node-forge": "1.4.3",
     "pinia": "catalog:",
     "qrcode": "catalog:",
     "vue": "catalog:",

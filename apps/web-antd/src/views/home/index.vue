@@ -24,7 +24,7 @@ import HomeNotifications from '#/components/management/home-notifications.vue';
 import PerformancePanel from '#/components/performance/performance-panel.vue';
 import { useAuthStore } from '#/store';
 
-import { count, money } from './format';
+import { count, dateTime, money } from './format';
 
 const authStore = useAuthStore();
 const userStore = useUserStore();
@@ -115,18 +115,7 @@ const shortcuts = computed(() =>
     { name: '小程序', path: '/miniapps', visible: overview.value?.manager },
   ].filter((item) => item.visible),
 );
-const updatedAt = computed(() =>
-  overview.value
-    ? new Intl.DateTimeFormat('zh-CN', {
-        timeZone: 'Asia/Shanghai',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: false,
-      }).format(new Date(overview.value.generatedAt))
-    : '—',
-);
+const updatedAt = computed(() => dateTime(overview.value?.generatedAt));
 
 async function load() {
   const current = ++version;
@@ -192,8 +181,9 @@ onUnmounted(() => {
           v-if="canEditCompany"
           type="primary"
           @click="router.push('/activities?create=1')"
-          >创建活动</Button
         >
+          创建活动
+        </Button>
         <Button v-if="canEditCompany" @click="showProfile = true">
           公司资料
         </Button>
@@ -210,72 +200,7 @@ onUnmounted(() => {
         <Button size="small" @click="load">重试</Button>
       </template>
     </Alert>
-    <HomeNotifications :page-size="15" />
-    <Card
-      v-if="!authStore.profile?.isPlatformAdmin"
-      size="small"
-      title="我的本月业绩"
-    >
-      <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <div>
-          <div class="text-muted-foreground text-sm">报名人数</div>
-          <Button
-            type="link"
-            class="!h-auto !px-0 !text-xl"
-            @click="
-              router.push({
-                path: '/registrations',
-                query: {
-                  onlySelf: 'true',
-                  period: 'month',
-                  event: 'registrations',
-                  status: 'registered',
-                },
-              })
-            "
-            >{{ count(overview?.personal?.registrations) }}</Button
-          >
-        </div>
-        <div>
-          <div class="text-muted-foreground text-sm">成交订单</div>
-          <Button
-            type="link"
-            class="!h-auto !px-0 !text-xl"
-            @click="
-              router.push({
-                path: '/registrations',
-                query: { onlySelf: 'true', period: 'month', event: 'paid' },
-              })
-            "
-            >{{ count(overview?.personal?.paidOrders) }}</Button
-          >
-        </div>
-        <div>
-          <div class="text-muted-foreground text-sm">净成交金额</div>
-          <Button
-            type="link"
-            class="!h-auto !px-0 !text-xl"
-            @click="
-              router.push({
-                path: '/registrations',
-                query: { onlySelf: 'true', period: 'month', event: 'paid' },
-              })
-            "
-            >{{ money(overview?.personal?.netRevenueCent) }}</Button
-          >
-        </div>
-        <div>
-          <div class="text-muted-foreground text-sm">我参加的活动</div>
-          <Button
-            type="link"
-            class="!px-0"
-            @click="router.push('/activities?onlyJoined=true')"
-          >
-            {{ count(overview?.joinedActivities) }} 场
-          </Button>
-        </div>
-      </div>
-    </Card>
+    <HomeNotifications />
     <Spin :spinning="loading">
       <div class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
         <Card
@@ -312,6 +237,74 @@ onUnmounted(() => {
         </Card>
       </div>
     </Spin>
+    <Card
+      v-if="!authStore.profile?.isPlatformAdmin"
+      size="small"
+      title="我的本月业绩"
+    >
+      <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <div>
+          <div class="text-muted-foreground text-sm">报名人数</div>
+          <Button
+            type="link"
+            class="!h-auto !px-0 !text-xl"
+            @click="
+              router.push({
+                path: '/registrations',
+                query: {
+                  onlySelf: 'true',
+                  period: 'month',
+                  event: 'registrations',
+                  status: 'registered',
+                },
+              })
+            "
+          >
+            {{ count(overview?.personal?.registrations) }}
+          </Button>
+        </div>
+        <div>
+          <div class="text-muted-foreground text-sm">成交订单</div>
+          <Button
+            type="link"
+            class="!h-auto !px-0 !text-xl"
+            @click="
+              router.push({
+                path: '/registrations',
+                query: { onlySelf: 'true', period: 'month', event: 'paid' },
+              })
+            "
+          >
+            {{ count(overview?.personal?.paidOrders) }}
+          </Button>
+        </div>
+        <div>
+          <div class="text-muted-foreground text-sm">净成交金额</div>
+          <Button
+            type="link"
+            class="!h-auto !px-0 !text-xl"
+            @click="
+              router.push({
+                path: '/registrations',
+                query: { onlySelf: 'true', period: 'month', event: 'paid' },
+              })
+            "
+          >
+            {{ money(overview?.personal?.netRevenueCent) }}
+          </Button>
+        </div>
+        <div>
+          <div class="text-muted-foreground text-sm">我参加的活动</div>
+          <Button
+            type="link"
+            class="!px-0"
+            @click="router.push('/activities?onlyJoined=true')"
+          >
+            {{ count(overview?.joinedActivities) }} 场
+          </Button>
+        </div>
+      </div>
+    </Card>
     <Card size="small" class="min-w-0">
       <div class="flex flex-wrap items-center gap-2">
         <span class="text-muted-foreground mr-2 text-sm">快捷入口</span>
@@ -341,18 +334,5 @@ onUnmounted(() => {
 <style>
 .company-profile-drawer .ant-drawer-content-wrapper {
   max-width: 100vw;
-}
-
-.dashboard-page .ant-card-head {
-  min-height: 38px;
-  padding-inline: 10px;
-}
-
-.dashboard-page .ant-card-head-title {
-  padding-block: 8px;
-}
-
-.dashboard-page .ant-card-body {
-  padding: 10px;
 }
 </style>

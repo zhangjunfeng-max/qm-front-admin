@@ -10,6 +10,11 @@ import type {
 
 import { ref } from 'vue';
 
+type NotificationOperation<T> = (
+  currentScope: NotificationScope,
+  signal: AbortSignal,
+) => Promise<T>;
+
 // Every binding owns a distinct lifetime, including returning to the same company.
 export function createNotificationCenter(api: typeof notificationApi) {
   const items = ref<Notice[]>([]);
@@ -67,10 +72,7 @@ export function createNotificationCenter(api: typeof notificationApi) {
     if (active && scope.value) foregroundRefresh();
   }
   async function run<T>(
-    operation: (
-      currentScope: NotificationScope,
-      signal: AbortSignal,
-    ) => Promise<T>,
+    operation: NotificationOperation<T>,
   ): Promise<T | undefined> {
     if (!scope.value) return;
     const current = controller;
@@ -124,7 +126,7 @@ export function createNotificationCenter(api: typeof notificationApi) {
     }
     return result;
   }
-  async function mutate(operation: Parameters<typeof run<void>>[0]) {
+  async function mutate(operation: NotificationOperation<void>) {
     const version = contextVersion.value;
     await run(operation);
     if (version !== contextVersion.value || !scope.value) return;
@@ -148,7 +150,7 @@ export function createNotificationCenter(api: typeof notificationApi) {
     const allowed =
       scope.value === 'platform'
         ? /^\/platform\/activities\?activityId=[\w-]+$/
-        : /^\/activities\/[\w-]+(?:\/(?:orders|members)(?:\?detailId=[\w-]+)?)?$/;
+        : /^\/activities\/[\w-]+(?:\/(?:members|orders|registrations)(?:\?detailId=[\w-]+)?)?$/;
     return {
       ...result,
       isRead: true,

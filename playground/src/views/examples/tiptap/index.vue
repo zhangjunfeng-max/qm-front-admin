@@ -21,7 +21,7 @@ const enableUpload = ref(true);
 const imageUpload: ImageUploadOptions = {
   accept: 'image/*',
   maxSize: 5 * 1024 * 1024, // 5MB
-  upload: (file, onProgress) =>
+  upload: (_file, onProgress) =>
     new Promise((resolve) => {
       let progress = 0;
       const interval = setInterval(() => {

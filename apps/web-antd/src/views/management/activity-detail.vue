@@ -49,6 +49,7 @@ import {
   getActivity,
   getActivityGroups,
   getActivityInvitation,
+  getActivityInvitationCode,
   getMyMembership,
 } from '#/api/management';
 import ActivityActions from '#/components/management/activity-actions.vue';
@@ -79,6 +80,8 @@ const inviteUrl = ref('');
 const inviting = ref(false);
 const loading = ref(false);
 const qrDataUrl = ref('');
+const invitationChannel = ref<'h5' | 'miniapp'>('h5');
+const miniappInvitationCode = ref('');
 const form = reactive({
   role: 'member' as const,
   groupId: null as null | string,
@@ -148,16 +151,28 @@ async function invitation(reset = false) {
   inviting.value = true;
   try {
     const r = await getActivityInvitation(id.value, reset);
-    inviteUrl.value = new URL(
-      router.resolve(r.registrationPath).href,
-      window.location.href,
-    ).href;
-    qrDataUrl.value = await QRCode.toDataURL(inviteUrl.value, {
-      width: 240,
-      margin: 2,
-    });
+    invitationChannel.value = r.channel;
+    inviteUrl.value = '';
+    qrDataUrl.value = '';
+    miniappInvitationCode.value = '';
+    if (r.channel === 'h5') {
+      const base = import.meta.env.VITE_ACTIVITY_H5_URL;
+      if (!base) throw new Error('未配置活动H5地址');
+      inviteUrl.value = new URL(r.registrationPath, base).href;
+      qrDataUrl.value = await QRCode.toDataURL(inviteUrl.value, {
+        width: 240,
+        margin: 2,
+      });
+    } else {
+      miniappInvitationCode.value = (
+        await getActivityInvitationCode(id.value)
+      ).dataUrl;
+    }
     invitationOpen.value = true;
-  } catch {
+  } catch (error) {
+    message.error(
+      error instanceof Error ? error.message : '员工邀请暂时无法生成',
+    );
   } finally {
     inviting.value = false;
   }
@@ -538,29 +553,51 @@ onMounted(load);
       @cancel="invitationOpen = false"
     >
       <p class="mb-3">
-        将链接发给员工，填写资料并提交申请，审核通过后加入活动。
+        {{
+          invitationChannel === 'h5'
+            ? '将活动专用邀请链接发给员工，微信验证后填写资料并提交申请。'
+            : '将活动专用小程序码发给员工，扫码后在微信小程序内验证并提交申请。'
+        }}
       </p>
       <img
-        v-if="qrDataUrl"
-        :src="qrDataUrl"
-        alt="员工加入二维码"
+        v-if="qrDataUrl || miniappInvitationCode"
+        :src="qrDataUrl || miniappInvitationCode"
+        :alt="
+          invitationChannel === 'h5' ? '员工H5邀请二维码' : '员工小程序邀请码'
+        "
         class="mx-auto mb-4 h-60 w-60"
       />
-      <Input.TextArea :value="inviteUrl" readonly :rows="3" />
+      <Input.TextArea
+        v-if="invitationChannel === 'h5'"
+        :value="inviteUrl"
+        readonly
+        :rows="3"
+      />
+      <Alert
+        v-else
+        type="info"
+        message="该小程序码只对应当前活动，不需要再同时发送H5邀请链接。"
+      />
       <Space class="mt-4">
-        <Button type="primary" @click="copy">复制链接</Button>
+        <Button
+          v-if="invitationChannel === 'h5'"
+          type="primary"
+          @click="copy"
+        >
+          复制链接
+        </Button>
         <Button
           danger
           :loading="inviting"
           @click="
             Modal.confirm({
               title: '重新生成邀请？',
-              content: '原邀请链接将立即失效。',
+              content: '原邀请入口将立即失效。',
               onOk: () => invitation(true),
             })
           "
         >
-          重置邀请链接
+          重置邀请
         </Button>
       </Space>
     </Modal>

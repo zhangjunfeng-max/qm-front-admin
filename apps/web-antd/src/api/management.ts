@@ -1,8 +1,6 @@
-import type { LoginPublicKey } from './login-crypto';
 import type { PlatformApi } from './platform';
 
-import { encryptLoginPassword } from './login-crypto';
-import { authRequestClient, requestClient } from './request';
+import { requestClient } from './request';
 export interface PageResult<T> {
   items: T[];
   total: number;
@@ -327,37 +325,13 @@ export const applyActivity = (
   data: { role: ActivityRole; groupId: null | string },
 ) => requestClient.post(`${base(id)}/applications`, data);
 export const getActivityInvitation = (id: string, reset = false) =>
-  requestClient.post<{ token: string; registrationPath: string }>(
+  requestClient.post<{
+    token: string;
+    registrationPath: string;
+    channel: 'h5' | 'miniapp';
+  }>(
     `${base(id)}/invitation`,
     { reset },
   );
-export interface Invitation {
-  activityName: string;
-  tenantName: string;
-  groups: { id: string; name: string }[];
-}
-export const readInvitation = (token: string) =>
-  authRequestClient.get<Invitation>(
-    `/auth/activity-invitations/${encodeURIComponent(token)}`,
-  );
-export async function registerForActivity(input: {
-  token: string;
-  phone: string;
-  displayName: string;
-  password: string;
-  role: ActivityRole;
-  groupId: null | string;
-}) {
-  const key = await authRequestClient.get<LoginPublicKey>('/auth/public-key');
-  const { password, ...data } = input;
-  data.phone = data.phone.trim();
-  const encryptedPassword = await encryptLoginPassword(
-    password,
-    key,
-    data.phone,
-  );
-  return authRequestClient.post<{ message: string }>(
-    '/auth/activity-register',
-    { ...data, encryptedPassword, keyId: key.keyId, challenge: key.challenge },
-  );
-}
+export const getActivityInvitationCode = (id: string) =>
+  requestClient.post<{ dataUrl: string }>(`${base(id)}/invitation-code`);

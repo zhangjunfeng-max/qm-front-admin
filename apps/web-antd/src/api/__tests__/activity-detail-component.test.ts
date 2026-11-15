@@ -15,6 +15,7 @@ const mock = vi.hoisted(() => ({
   push: vi.fn(),
   resolve: vi.fn(),
   invitation: vi.fn(),
+  invitationCode: vi.fn(),
 }));
 vi.mock('#/store', () => ({ useAuthStore: () => ({ profile: { isPlatformAdmin: false } }) }));
 vi.mock('@vben/stores', () => ({
@@ -57,6 +58,7 @@ vi.mock('#/api/management', () => ({
   getMyMembership: async () => null,
   getActivityGroups: vi.fn(),
   getActivityInvitation: mock.invitation,
+  getActivityInvitationCode: mock.invitationCode,
   applyActivity: vi.fn(),
   assignActivityEmployee: mock.assign,
   changeActivityState: vi.fn(),
@@ -67,6 +69,9 @@ afterEach(() => {
   document.body.innerHTML = '';
   mock.get.mockReset();
   mock.assign.mockReset();
+  mock.invitation.mockReset();
+  mock.invitationCode.mockReset();
+  vi.unstubAllEnvs();
 });
 function record(id: string): Activity {
   return {
@@ -209,14 +214,13 @@ it('does not expose a participation entry when the server forbids platform parti
   expect(mock.assign).not.toHaveBeenCalled();
 });
 
-it('generates employee invitations using the configured router history', async () => {
+it('generates a channel-matched H5 employee invitation', async () => {
+  vi.stubEnv('VITE_ACTIVITY_H5_URL', 'https://activity.example.com/');
   mock.route = reactive({ params: { id: 'invite' } });
   mock.get.mockResolvedValue({ ...record('invite'), canManageMembers: true });
   mock.invitation.mockResolvedValue({
-    registrationPath: '/auth/activity-register?token=example',
-  });
-  mock.resolve.mockReturnValue({
-    href: '/#/auth/activity-register?token=example',
+    registrationPath: '#/pages/staff-invite/index?token=AbCdEfGh1234_-56',
+    channel: 'h5',
   });
   const root = document.createElement('div');
   document.body.append(root);
@@ -231,10 +235,39 @@ it('generates employee invitations using the configured router history', async (
   invite!.click();
   await vi.waitFor(() =>
     expect(document.querySelector('textarea')?.value).toContain(
-      '/#/auth/activity-register?token=example',
+      'https://activity.example.com/#/pages/staff-invite/index?token=AbCdEfGh1234_-56',
     ),
   );
-  expect(mock.resolve).toHaveBeenCalledWith(
-    '/auth/activity-register?token=example',
+  expect(mock.invitationCode).not.toHaveBeenCalled();
+});
+
+it('uses only a mini program code for a mini program employee invitation', async () => {
+  mock.route = reactive({ params: { id: 'invite-mini' } });
+  mock.get.mockResolvedValue({
+    ...record('invite-mini'),
+    channel: 'miniapp',
+    canManageMembers: true,
+  });
+  mock.invitation.mockResolvedValue({
+    channel: 'miniapp',
+    registrationPath: '#/pages/staff-invite/index?token=AbCdEfGh1234_-56',
+  });
+  mock.invitationCode.mockResolvedValue({
+    dataUrl: 'data:image/png;base64,aGVsbG8=',
+  });
+  const root = document.createElement('div');
+  document.body.append(root);
+  const app = createApp({ render: () => h(ActivityDetail) });
+  app.mount(root);
+  unmount = () => app.unmount();
+  await vi.waitFor(() => expect(root.textContent).toContain('活动invite-mini'));
+  const invite = [...root.querySelectorAll('button')].find(
+    (b) => b.textContent?.replaceAll(/\s/g, '') === '员工邀请',
   );
+  expect(invite).toBeTruthy();
+  invite!.click();
+  await vi.waitFor(() =>
+    expect(document.querySelector('textarea')).toBeNull(),
+  );
+  expect(mock.invitationCode).toHaveBeenCalledWith('invite-mini');
 });

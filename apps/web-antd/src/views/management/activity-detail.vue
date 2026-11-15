@@ -360,7 +360,7 @@ onMounted(load);
               }}
             </DescriptionsItem>
             <DescriptionsItem label="活动渠道">
-              {{ activity.channel === 'h5' ? 'H5' : 'H5 + 小程序' }}
+              {{ activity.channel === 'h5' ? 'H5' : '微信小程序' }}
             </DescriptionsItem>
             <DescriptionsItem label="虚拟报名人数">
               {{ activity.virtualRegistrationCount }}

@@ -23,7 +23,7 @@ const idB = '87654321-1234-1234-1234-123456789abc';
 let cleanup: (() => void) | undefined;
 function record(
   id = idA,
-  channel: Activity['channel'] = 'h5_miniapp',
+  channel: Activity['channel'] = 'miniapp',
 ): Activity {
   return {
     ...defaultActivity(),
@@ -92,14 +92,6 @@ function button(label: string) {
   return target!;
 }
 async function miniappTab() {
-  await vi.waitFor(() =>
-    expect(document.querySelector('[role="tab"]')).toBeTruthy(),
-  );
-  const tab = [...document.querySelectorAll<HTMLElement>('[role="tab"]')].find(
-    (el) => el.textContent === '小程序',
-  );
-  expect(tab).toBeTruthy();
-  tab!.click();
   await nextTick();
 }
 beforeEach(() => {
@@ -139,6 +131,8 @@ it('generates bound mini program codes only on request and allows retry after fa
   mount();
   await miniappTab();
   expect(document.body.textContent).toContain('品牌小程序');
+  expect(document.querySelector('textarea')).toBeNull();
+  expect(document.body.textContent).not.toContain('复制链接');
   expect(api.post).not.toHaveBeenCalled();
   button('生成小程序码').click();
   await vi.waitFor(() =>
@@ -168,28 +162,29 @@ it('generates bound mini program codes only on request and allows retry after fa
 it.each(['draft', 'approved', 'archived'] as const)(
   'keeps %s discoverable while disabling customer promotion',
   async (status) => {
-    mount({ ...record(), status, storedStatus: status });
+    mount({ ...record(idA, 'h5'), status, storedStatus: status });
     await vi.waitFor(() =>
       expect(document.body.textContent).toContain('发布后可推广'),
     );
     expect(api.qr).not.toHaveBeenCalled();
     expect(button('打开活动').disabled).toBe(true);
-    await miniappTab();
-    expect(button('生成小程序码').disabled).toBe(true);
     expect(api.post).not.toHaveBeenCalled();
   },
 );
 it('supports ended published activities', async () => {
-  mount({ ...record(), status: 'ended' });
+  mount({ ...record(idA, 'h5'), status: 'ended' });
   await vi.waitFor(() => expect(document.querySelector('img')?.src).toBe(png));
   expect(button('打开活动').disabled).toBe(false);
 });
-it('does not create links or images from invalid configuration or unsafe code responses', async () => {
+it('does not create H5 links or QR images from an unsafe activity URL', async () => {
   vi.stubEnv('VITE_ACTIVITY_H5_URL', 'javascript:alert(1)');
-  api.post.mockResolvedValue({ dataUrl: 'data:image/svg+xml;base64,PHN2Zz4=' });
-  mount();
+  mount(record(idA, 'h5'));
   await vi.waitFor(() => expect(button('打开活动').disabled).toBe(true));
   expect(api.qr).not.toHaveBeenCalled();
+});
+it('does not render unsafe mini program code responses', async () => {
+  api.post.mockResolvedValue({ dataUrl: 'data:image/svg+xml;base64,PHN2Zz4=' });
+  mount();
   await miniappTab();
   button('生成小程序码').click();
   await vi.waitFor(() =>

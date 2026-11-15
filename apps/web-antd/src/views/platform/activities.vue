@@ -359,7 +359,7 @@ onBeforeUnmount(() => {
                   </Space>
                 </DescriptionsItem>
                 <DescriptionsItem label="活动渠道">
-                  {{ detail.channel === 'h5' ? 'H5' : 'H5 + 小程序' }}
+                  {{ detail.channel === 'h5' ? 'H5' : '微信小程序' }}
                 </DescriptionsItem>
                 <DescriptionsItem label="开始时间">
                   {{ date(detail.startsAt) }}

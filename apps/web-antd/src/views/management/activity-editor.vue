@@ -135,7 +135,7 @@ async function loadPaymentStatus() {
     paymentAccounts.value = [];
     return;
   }
-  if (form.channel === 'h5_miniapp' && !form.miniappId) {
+  if (form.channel === 'miniapp' && !form.miniappId) {
     paymentAccounts.value = [];
     form.paymentAccountId = null;
     return;
@@ -144,7 +144,7 @@ async function loadPaymentStatus() {
   try {
     const result = await getActivityPaymentAccounts({
       channel: form.channel,
-      miniappId: form.channel === 'h5_miniapp' ? form.miniappId : null,
+      miniappId: form.channel === 'miniapp' ? form.miniappId : null,
     });
     if (serial === paymentStatusRequest) {
       paymentAccounts.value = result.items;
@@ -277,7 +277,7 @@ async function save(submit = false) {
     activityThemePreset(form.theme);
     form.themeColor = normalizeActivityThemeColor(form.themeColor);
     if (
-      form.channel === 'h5_miniapp' &&
+      form.channel === 'miniapp' &&
       (miniappBusy.value || miniappFailed.value || !form.miniappId)
     )
       throw new Error('请选择小程序并等待加载完成');
@@ -447,7 +447,7 @@ function setDate(key: 'endsAt' | 'startsAt', value: unknown) {
                 :disabled="saving || loading || coreLocked"
                 :options="[
                   { label: 'H5', value: 'h5' },
-                  { label: 'H5 + 小程序', value: 'h5_miniapp' },
+                  { label: '微信小程序', value: 'miniapp' },
                 ]"
               />
             </FormItem>
@@ -459,7 +459,7 @@ function setDate(key: 'endsAt' | 'startsAt', value: unknown) {
               />
             </FormItem>
             <FormItem
-              v-if="form.channel === 'h5_miniapp'"
+              v-if="form.channel === 'miniapp'"
               label="小程序"
               required
               tooltip="每个活动只能选择当前公司的一个小程序。"
@@ -849,7 +849,7 @@ function setDate(key: 'endsAt' | 'startsAt', value: unknown) {
             employeesBusy ||
             failed ||
             assets.preparing.value > 0 ||
-            (form.channel === 'h5_miniapp' &&
+            (form.channel === 'miniapp' &&
               (miniappBusy || miniappFailed || !form.miniappId))
           "
           @click="save(false)"

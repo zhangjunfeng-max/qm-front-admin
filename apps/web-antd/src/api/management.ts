@@ -159,7 +159,7 @@ export interface ActivityInput {
   employeeRegistrationEnabled: boolean;
   memberPerformanceScope: 'all' | 'group' | 'self';
   leaderPerformanceScope: 'all' | 'group';
-  channel: 'h5' | 'h5_miniapp';
+  channel: 'h5' | 'miniapp';
   miniappId: null | string;
   paymentAccountId: null | string;
 }
